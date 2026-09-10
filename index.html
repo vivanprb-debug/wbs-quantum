@@ -233,6 +233,26 @@
 <style id="west-bridgford-weather-css">
 .weather-local-card{margin:12px 0;padding:16px}.weather-local-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.weather-local-title{font-weight:800;font-size:18px}.weather-local-sub{font-size:12px;opacity:.68;margin-top:3px}.weather-local-temp{font-size:42px;font-weight:800;line-height:1}.weather-local-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12px;opacity:.82}.weather-local-meta span{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.05)}.weather-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:16px 0 8px}.weather-hours,.weather-days{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.weather-hour,.weather-day{min-width:68px;text-align:center;padding:9px 6px;border-radius:12px;background:rgba(255,255,255,.045);display:flex;flex-direction:column;gap:5px;font-size:12px}.weather-hour span:nth-child(2),.weather-day span:nth-child(2){font-size:20px}.weather-hour small,.weather-day small{opacity:.65}.weather-source{font-size:10px;opacity:.45;margin-top:12px}</style>
 
+<style id="quantum-upgrade-css">
+/* Quantum polish: smooth micro-interactions, faster paint, install + status UI */
+.tab-view{content-visibility:auto;contain:layout paint style}
+.glass-card,.day-streak-card,.leaderboard-card,.weather-local-card{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.glass-card:hover,.leaderboard-card:hover{transform:translateY(-2px)}
+.q-enter{animation:qEnter .34s cubic-bezier(.2,.8,.2,1) both}
+@keyframes qEnter{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+.q-pulse{animation:qPulse 1.8s ease-in-out infinite}
+@keyframes qPulse{0%,100%{box-shadow:0 0 0 0 rgba(139,92,246,.08)}50%{box-shadow:0 0 0 8px rgba(139,92,246,0)}}
+.weather-advice{margin-top:12px;padding:12px 14px;border-radius:16px;background:linear-gradient(135deg,rgba(139,92,246,.13),rgba(14,165,233,.10));border:1px solid rgba(255,255,255,.08);display:flex;gap:10px;align-items:center}
+.weather-advice-icon{font-size:24px}.weather-advice-title{font-size:12px;font-weight:800}.weather-advice-text{font-size:12px;opacity:.78;margin-top:2px;line-height:1.35}
+.status-strip{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:10px 0;padding:10px 12px;border-radius:14px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);font-size:11px;opacity:.9}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#f59e0b;margin-right:7px}.status-dot.online{background:#22c55e}.status-dot.offline{background:#ef4444}
+.dev-access-box{margin-bottom:16px;padding:14px;border-radius:16px;background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.2)}
+.dev-access-note{font-size:11px;color:#aaaec4;line-height:1.4;margin-top:6px}
+.ai-maintenance{display:none;margin-bottom:14px;padding:18px;text-align:center;border:1px solid rgba(255,255,255,.09);border-radius:20px;background:rgba(25,23,40,.86)}
+.ai-maintenance.open{display:block}.ai-maintenance-icon{font-size:38px}.ai-maintenance-title{font-size:19px;font-weight:800;margin-top:6px}.ai-maintenance-text{font-size:12px;color:#a9abc0;line-height:1.45;margin-top:5px}
+.install-btn{display:none;margin-top:10px}.install-btn.show{display:block}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition:none!important}}
+</style>
 <style id="leaderboard-css">#ui-leaderboard{display:flex;flex-direction:column;gap:10px}.leaderboard-card{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(20,20,35,.45);backdrop-filter:blur(18px)}.leaderboard-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:10px}.leaderboard-rank{font-size:16px;font-weight:900;text-align:center}.leaderboard-name{font-weight:800}.leaderboard-meta{font-size:11px;color:#9497ad;margin-top:3px}.leaderboard-score{font-size:22px;font-weight:900}.leaderboard-me{border-color:rgba(139,92,246,.45);box-shadow:0 0 0 1px rgba(139,92,246,.08) inset}</style>
 </head>
 <body>
@@ -339,6 +359,11 @@
         <h2 class="g-title">Quantum AI</h2>
         <p class="g-sub" id="ai-sub">Set up your API key to start chatting.</p>
       </div>
+      <div id="ai-maintenance-overlay" class="ai-maintenance" aria-live="polite">
+        <div class="ai-maintenance-icon">🛠️</div>
+        <div class="ai-maintenance-title">Quantum AI is being updated</div>
+        <div class="ai-maintenance-text">The AI assistant is temporarily paused while improvements are being made. Your timetable, tasks and exams are still available.</div>
+      </div>
       <div class="chat-container" id="ui-chat-box"></div>
       <div class="input-group" style="margin-bottom:0; position: sticky; bottom: 0;">
         <input type="text" id="ai-input" class="glass-input" placeholder="Message AI...">
@@ -401,6 +426,8 @@
         <input type="text" id="api-model-input" class="glass-input" placeholder="gemini-3.6-flash" style="width:100%;">
         <p class="card-meta" style="margin-top:6px; font-size:11px;">Google renames/retires models often — if chat stops working, check ai.google.dev/gemini-api/docs/models and update this.</p>
       </div>
+      <div class="status-strip" id="network-status-strip"><div><span id="network-status-dot" class="status-dot"></span><span id="network-status-text">Checking connection…</span></div><span id="pwa-status-text">PWA ready</span></div>
+      <button class="btn-primary install-btn" id="install-pwa-btn" onclick="installPWA()" style="width:100%;background:rgba(255,255,255,.08);box-shadow:none;">Install WBS Quantum</button>
       <div class="field-group" style="border-top:1px solid var(--glass-border); padding-top:16px;">
         <span class="field-label">Reminders</span>
         <p class="card-meta" style="margin:4px 0 10px 0;">Get a notification for PE kit, tasks due, and exams coming up \u2014 when the app is open.</p>
@@ -420,7 +447,9 @@
 
   <div class="modal-overlay" id="ui-dev-modal">
     <div class="modal-box glass-card">
-      <h2 class="card-title">Add Homework</h2>
+      <h2 class="card-title">Developer Panel</h2>
+      <div class="dev-access-box"><b>Developer mode unlocked</b><div class="dev-access-note">This is a front-end convenience unlock on this device. It is not a security boundary. Firebase-protected admin actions still require the real developer Firebase account.</div></div>
+      <h3 class="section-header" style="margin-top:0;">Add Homework</h3>
       <p class="card-meta" style="margin-bottom:18px;">Goes straight into this account's Tasks tab.</p>
       <div class="field-group">
         <span class="field-label">Title</span>
@@ -441,6 +470,19 @@
       <div style="display:flex; gap:12px; margin-top:6px;">
         <button class="btn-primary" style="flex:1;" onclick="devAddHomework()">Add</button>
         <button class="btn-primary" style="flex:1; background:rgba(255,255,255,0.1); box-shadow:none;" onclick="toggleDevModal(false)">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="ui-dev-auth-modal">
+    <div class="modal-box glass-card">
+      <h2 class="card-title">Developer Access</h2>
+      <p class="card-meta" style="margin-bottom:16px;">Type the developer email to unlock the local developer panel on this device.</p>
+      <input type="email" id="dev-access-email" class="glass-input" placeholder="Developer email" autocomplete="off" style="width:100%;">
+      <div class="login-error" id="dev-access-error" style="margin-top:12px;"></div>
+      <div style="display:flex;gap:12px;margin-top:16px;">
+        <button class="btn-primary" style="flex:1;" onclick="unlockDeveloperMode()">Unlock</button>
+        <button class="btn-primary" style="flex:1;background:rgba(255,255,255,.1);box-shadow:none;" onclick="toggleDevAuthModal(false)">Cancel</button>
       </div>
     </div>
   </div>
@@ -1917,6 +1959,7 @@ function handleFetchError(err) {
 }
 
 function handleSend() {
+  if (aiMaintenanceEnabled) { return; }
   var input = document.getElementById('ai-input');
   var text = input.value.replace(/^\s+|\s+$/g, '');
   if (text === '') return;
@@ -2224,8 +2267,10 @@ function renderWeatherCard() {
     var day = new Date(d.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short'});
     return '<div class="weather-day"><b>' + day + '</b><span>' + weatherCodeIcon(d.code, true) + '</span><span>' + Math.round(d.max) + '° / ' + Math.round(d.min) + '°</span><small>' + Math.round(d.rainChance || 0) + '%</small></div>';
   }).join('');
+  var advice = weatherOutfitAdvice(w);
   card.innerHTML = '<div class="weather-local-head"><div><div class="q-label">Weather</div><div class="weather-local-title">' + WEATHER_LOCATION + '</div><div class="weather-local-sub">' + weatherCodeText(w.code) + ' · Updated ' + (w.updated || 'recently') + '</div></div><div class="weather-local-temp">' + Math.round(w.temp) + '°</div></div>' +
     '<div class="weather-local-meta"><span>Feels ' + Math.round(w.feels) + '°</span><span>🌧️ ' + Math.round(w.rainChance || 0) + '%</span><span>💨 ' + Math.round(w.wind || 0) + ' km/h ' + weatherWindDir(w.windDir) + '</span><span>💨 Gusts ' + Math.round(w.gusts || 0) + ' km/h</span></div>' +
+    '<div class="weather-advice q-pulse"><div class="weather-advice-icon">' + advice.icon + '</div><div><div class="weather-advice-title">What to wear</div><div class="weather-advice-text">' + advice.text + '</div></div></div>' +
     '<div class="weather-section-title">Next few hours</div><div class="weather-hours">' + next + '</div>' +
     '<div class="weather-section-title">5-day outlook</div><div class="weather-days">' + days + '</div>' +
     '<div class="weather-source">Source: Open-Meteo · UK Met Office UKV 2 km model where available</div>';
@@ -2304,6 +2349,17 @@ function getWeather() {
   return SafeStore.getJSON(WEATHER_CACHE_KEY, null) || SafeStore.getJSON('wbs_weather', null);
 }
 
+function weatherOutfitAdvice(w) {
+  if (!w) return {icon:'🧥', text:'Weather advice will appear when the latest forecast loads.'};
+  var temp = Number(w.feels != null ? w.feels : w.temp || 0), rain = Number(w.rainChance || 0), wind = Number(w.wind || 0);
+  if (temp < 7) return {icon:'🧥', text:'Cold day — a warm jumper or coat would be a good idea.'};
+  if (temp < 12) return {icon:'🧥', text:rain >= 50 ? 'Chilly and wet — wear a jumper and bring a waterproof jacket.' : 'Chilly day — a jumper is a good idea.'};
+  if (temp < 16) return {icon:'🧢', text:rain >= 50 ? 'Mild but wet — a light jacket and waterproof layer should help.' : 'Mild day — a light jacket or hoodie should be comfortable.'};
+  if (rain >= 60) return {icon:'☔', text:'Warm enough, but rain is likely — bring a waterproof layer or umbrella.'};
+  if (temp >= 24) return {icon:'🧴', text:'Warm day — light clothing and water are a good idea.'};
+  return {icon:'👕', text: wind >= 25 ? 'Comfortable temperature, but it may feel breezy — a light layer could help.' : 'Comfortable conditions — normal school clothes should be fine.'};
+}
+
 function weatherPhrase() {
   var w = getWeather();
   if (!w) return '';
@@ -2321,18 +2377,60 @@ function weatherIcon() {
 
 // ================= DEV PANEL =================
 var DEV_EMAIL = 'dev@wbsquantum.app';
+var DEV_UNLOCK_KEY = 'wbs_quantum_dev_unlocked_v2';
+var AI_MAINT_KEY = 'wbs_quantum_ai_maintenance_v1';
 var MAINTENANCE_REF = null;
 var maintenanceEnabled = false;
 var maintenanceError = '';
 var maintenanceListening = false;
-function isDeveloper(){return !!(currentUser&&currentUser.email&&currentUser.email.trim().toLowerCase()===DEV_EMAIL);}
-function handleDevUnlockPrompt(){if(!isDeveloper()){window.alert('Sign in with the developer account ('+DEV_EMAIL+') to open the developer panel.');return;}toggleSettings(false);toggleDevModal(true);loadMaintenanceState();renderDevMaintenanceControls();}
-function renderMaintenanceState(){var overlay=document.getElementById('maintenance-overlay'),devNote=document.getElementById('maintenance-dev');if(!overlay)return;var bypass=isDeveloper();overlay.className=(maintenanceEnabled&&!bypass)?'open':'';if(devNote){devNote.style.display=(maintenanceEnabled&&bypass)?'block':'none';}}
-function loadMaintenanceState(){if(!fbDb)return;if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');if(maintenanceListening)return;maintenanceListening=true;MAINTENANCE_REF.onSnapshot(function(doc){maintenanceEnabled=!!(doc.exists&&doc.data()&&doc.data().enabled);maintenanceError='';renderMaintenanceState();renderDevMaintenanceControls();},function(err){maintenanceError=(err&&err.message)?err.message:'Unable to read maintenance status.';renderMaintenanceState();renderDevMaintenanceControls();if(isDeveloper()&&window.console&&console.error)console.error('Maintenance read failed',err);});}
-function setMaintenanceMode(enabled){if(!isDeveloper()){alert('Developer account required.');return;}if(!fbDb){alert('Firebase is not ready yet.');return;}if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');MAINTENANCE_REF.set({enabled:!!enabled,updatedAt:new Date().toISOString(),updatedBy:currentUser.email},{merge:true}).then(function(){maintenanceEnabled=!!enabled;maintenanceError='';renderMaintenanceState();renderDevMaintenanceControls();}).catch(function(err){maintenanceError=(err&&err.message)?err.message:'Permission denied.';renderDevMaintenanceControls();alert('Maintenance update failed. Deploy the included firestore.rules.txt and make sure '+DEV_EMAIL+' is the signed-in Firebase developer account.');if(window.console&&console.error)console.error('Maintenance write failed',err);});}
-function renderDevMaintenanceControls(){var box=document.getElementById('dev-maintenance-controls');if(!box||!isDeveloper())return;box.innerHTML='<div style="margin-top:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>Maintenance mode</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">ON = students see the maintenance screen. The developer account bypasses it.</div><div style="display:flex;gap:8px"><button onclick="setMaintenanceMode(true)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn on</button><button onclick="setMaintenanceMode(false)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn off</button></div><div style="margin-top:9px;font-size:12px;color:'+(maintenanceEnabled?'#fbbf24':'#86efac')+'">Status: '+(maintenanceEnabled?'ON':'OFF')+'</div>'+(maintenanceError?'<div style="margin-top:8px;font-size:11px;color:#fda4af">'+escapeHTML(maintenanceError)+'</div>':'')+'</div>';}
+var aiMaintenanceEnabled = false;
+var actualDeveloperAuth = false;
+function hasLocalDeveloperUnlock(){return SafeStore.get(DEV_UNLOCK_KEY,'')==='1';}
+function isDeveloper(){
+  var email = currentUser && currentUser.email ? currentUser.email.trim().toLowerCase() : '';
+  actualDeveloperAuth = email === DEV_EMAIL;
+  return !!currentUser && (actualDeveloperAuth || hasLocalDeveloperUnlock());
+}
+function unlockDeveloperMode(){
+  var input=document.getElementById('dev-access-email'), err=document.getElementById('dev-access-error');
+  var value=(input&&input.value||'').trim().toLowerCase();
+  if(value!==DEV_EMAIL){if(err){err.textContent='That email does not match the developer email.';err.classList.add('show');}return;}
+  SafeStore.set(DEV_UNLOCK_KEY,'1');
+  if(err){err.textContent='';err.classList.remove('show');}
+  toggleDevAuthModal(false); toggleSettings(false); toggleDevModal(true); loadMaintenanceState(); loadAIMaintenanceState(); renderDevMaintenanceControls(); renderDevHomeworkRecipients();
+}
+function toggleDevAuthModal(show){var m=document.getElementById('ui-dev-auth-modal');if(!m)return;m.className=show?'modal-overlay open':'modal-overlay';if(show){var i=document.getElementById('dev-access-email'),e=document.getElementById('dev-access-error');if(i){i.value='';i.focus();}if(e){e.textContent='';e.classList.remove('show');}}}
+function handleDevUnlockPrompt(){
+  if(!currentUser){alert('Please sign in first.');return;}
+  if(isDeveloper()){toggleSettings(false);toggleDevModal(true);loadMaintenanceState();loadAIMaintenanceState();renderDevMaintenanceControls();renderDevHomeworkRecipients();return;}
+  toggleDevAuthModal(true);
+}
+function renderMaintenanceState(){var overlay=document.getElementById('maintenance-overlay'),devNote=document.getElementById('maintenance-dev');if(!overlay)return;var bypass=actualDeveloperAuth;overlay.className=(maintenanceEnabled&&!bypass)?'open':'';if(devNote){devNote.style.display=(maintenanceEnabled&&bypass)?'block':'none';}}
+function loadMaintenanceState(){
+  var local=SafeStore.get('wbs_quantum_local_maintenance','')==='1'; if(local && !actualDeveloperAuth) maintenanceEnabled=true;
+  if(!fbDb){renderMaintenanceState();return;}
+  if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');
+  if(maintenanceListening)return;
+  maintenanceListening=true;
+  MAINTENANCE_REF.onSnapshot(function(doc){maintenanceEnabled=!!(doc.exists&&doc.data()&&doc.data().enabled);maintenanceError='';renderMaintenanceState();renderDevMaintenanceControls();},function(err){maintenanceError=(err&&err.message)?err.message:'Unable to read maintenance status.';renderMaintenanceState();renderDevMaintenanceControls();});
+}
+function localMaintenanceSet(enabled){maintenanceEnabled=!!enabled;SafeStore.set('wbs_quantum_local_maintenance',enabled?'1':'0');renderMaintenanceState();}
+function setMaintenanceMode(enabled){
+  if(!isDeveloper()){alert('Developer panel is locked.');return;}
+  if(actualDeveloperAuth && fbDb){
+    if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');
+    MAINTENANCE_REF.set({enabled:!!enabled,updatedAt:new Date().toISOString(),updatedBy:currentUser.email},{merge:true}).then(function(){maintenanceEnabled=!!enabled;renderMaintenanceState();renderDevMaintenanceControls();}).catch(function(){localMaintenanceSet(enabled);renderDevMaintenanceControls();alert('Cloud maintenance could not be changed, so this device preview was updated instead.');});
+  } else { localMaintenanceSet(enabled); renderDevMaintenanceControls(); }
+}
+function loadAIMaintenanceState(){aiMaintenanceEnabled=SafeStore.get(AI_MAINT_KEY,'')==='1';renderAIMaintenance();}
+function setAIMaintenanceMode(enabled){if(!isDeveloper()){alert('Developer panel is locked.');return;}aiMaintenanceEnabled=!!enabled;SafeStore.set(AI_MAINT_KEY,enabled?'1':'0');renderAIMaintenance();renderDevMaintenanceControls();}
+function renderAIMaintenance(){var e=document.getElementById('ai-maintenance-overlay'),box=document.getElementById('ui-chat-box'),input=document.getElementById('ai-input'),button=document.querySelector('#view-ai .input-group .btn-primary');if(!e)return;e.className=aiMaintenanceEnabled?'ai-maintenance open':'ai-maintenance';if(box)box.style.display=aiMaintenanceEnabled?'none':'';if(input)input.disabled=aiMaintenanceEnabled;if(button)button.disabled=aiMaintenanceEnabled;}
+function renderDevMaintenanceControls(){
+  var box=document.getElementById('dev-maintenance-controls');if(!box||!isDeveloper())return;
+  box.innerHTML='<div style="margin-top:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>App maintenance</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">Students can see a maintenance screen while you work. Cloud sync works only with the real developer Firebase account; local unlocks provide a device preview.</div><div style="display:flex;gap:8px"><button onclick="setMaintenanceMode(true)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn on</button><button onclick="setMaintenanceMode(false)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn off</button></div><div style="margin-top:9px;font-size:12px;color:'+(maintenanceEnabled?'#fbbf24':'#86efac')+'">Status: '+(maintenanceEnabled?'ON':'OFF')+'</div>'+(maintenanceError?'<div style="margin-top:8px;font-size:11px;color:#fda4af">'+escapeHTML(maintenanceError)+'</div>':'')+'</div><div style="margin-top:12px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>Quantum AI maintenance</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">Preview an AI-only maintenance screen without taking the rest of the app offline.</div><div style="display:flex;gap:8px"><button onclick="setAIMaintenanceMode(true)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Pause AI</button><button onclick="setAIMaintenanceMode(false)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Resume AI</button></div><div style="margin-top:9px;font-size:12px;color:'+(aiMaintenanceEnabled?'#fbbf24':'#86efac')+'">Status: '+(aiMaintenanceEnabled?'PAUSED':'READY')+'</div></div>';
+}
 function injectDevMaintenanceControls(){if(!isDeveloper()||document.getElementById('dev-maintenance-controls'))return;var p=document.querySelector('#ui-dev-modal .modal-box');if(!p)return;var box=document.createElement('div');box.id='dev-maintenance-controls';p.appendChild(box);renderDevMaintenanceControls();}
-function toggleDevModal(show){document.getElementById('ui-dev-modal').className=show?'modal-overlay open':'modal-overlay';if(show){document.getElementById('dev-hw-title').value='';document.getElementById('dev-hw-subject').value='';document.getElementById('dev-hw-due').value='';document.getElementById('dev-hw-instructions').value='';setTimeout(injectDevMaintenanceControls,50);setTimeout(renderDevMaintenanceControls,100);}}
+function toggleDevModal(show){document.getElementById('ui-dev-modal').className=show?'modal-overlay open':'modal-overlay';if(show){document.getElementById('dev-hw-title').value='';document.getElementById('dev-hw-subject').value='';document.getElementById('dev-hw-due').value='';document.getElementById('dev-hw-instructions').value='';loadAIMaintenanceState();setTimeout(injectDevMaintenanceControls,50);setTimeout(renderDevMaintenanceControls,100);setTimeout(renderDevHomeworkRecipients,120);}}
 function devAddHomework(){var title=document.getElementById('dev-hw-title').value.replace(/^\s+|\s+$/g,''),subject=document.getElementById('dev-hw-subject').value.replace(/^\s+|\s+$/g,''),due=document.getElementById('dev-hw-due').value,instructions=document.getElementById('dev-hw-instructions').value.replace(/^\s+|\s+$/g,'');if(!title){window.alert('Give it a title first.');return;}var list=loadTasks();list.unshift({id:'hw'+Date.now(),text:title,done:false,due:due||'',subject:subject||'',instructions:instructions||'',source:'dev'});saveTasks(list);toggleDevModal(false);safeRun(renderTasks);safeRun(renderHome);vibrate(20);}
 // ================= CONFETTI =================
 function fireConfetti() {
@@ -2373,8 +2471,17 @@ function checkAllTasksDoneToday() {
   vibrate([15, 40, 15, 40, 30]);
 }
 
+var deferredInstallPrompt = null;
+function renderNetworkStatus(){var dot=document.getElementById('network-status-dot'),txt=document.getElementById('network-status-text'),pwa=document.getElementById('pwa-status-text');if(!dot||!txt)return;var online=navigator.onLine!==false;dot.className='status-dot '+(online?'online':'offline');txt.textContent=online?'Online · synced when possible':'Offline · local data still available';if(pwa){pwa.textContent=location.protocol==='https:'||location.hostname==='localhost'?'PWA ready':'Host on HTTPS to install';}}
+function installPWA(){if(!deferredInstallPrompt){alert('Your browser has not offered the install option yet. Use the browser menu → Install app / Add to home screen.');return;}deferredInstallPrompt.prompt();deferredInstallPrompt.userChoice.then(function(){deferredInstallPrompt=null;var b=document.getElementById('install-pwa-btn');if(b)b.classList.remove('show');});}
+window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();deferredInstallPrompt=e;var b=document.getElementById('install-pwa-btn');if(b)b.classList.add('show');renderNetworkStatus();});
+window.addEventListener('appinstalled',function(){deferredInstallPrompt=null;var b=document.getElementById('install-pwa-btn');if(b)b.classList.remove('show');var p=document.getElementById('pwa-status-text');if(p)p.textContent='Installed ✓';});
+window.addEventListener('online',renderNetworkStatus);window.addEventListener('offline',renderNetworkStatus);
+
 function boot() {
   safeRun(registerServiceWorker);
+  safeRun(renderNetworkStatus);
+  safeRun(renderAIMaintenance);
   safeRun(renderCalendarStrip);
   safeRun(renderHome);
   safeRun(renderSchedule);
@@ -2385,9 +2492,11 @@ function boot() {
   safeRun(runDailyReminders);
   safeRun(fetchWeatherIfNeeded);
   safeRun(function () { moveLiquidTo(document.getElementById('dock-home'), false); });
+  safeRun(function () { document.querySelectorAll('.glass-card,.greeting-box').forEach(function(e,i){ e.classList.add('q-enter'); e.style.animationDelay=(Math.min(i,8)*35)+'ms'; }); });
 
   document.getElementById('task-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') addTask(); });
   document.getElementById('ai-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleSend(); });
+  document.getElementById('dev-access-email').addEventListener('keypress', function (e) { if (e.key === 'Enter') unlockDeveloperMode(); });
 
   tickClock();
   clockTimer = setInterval(function () { safeRun(tickClock); }, 1000);
@@ -2434,7 +2543,7 @@ var DEV_HOMEWORK_USERS=[
   {uid:'YAF3QAxWhJRzFDvqDSBSp1xUHxH3',name:'Freddie',email:'Freddie@wbsquantum.app'}
 ];
 function renderDevHomeworkRecipients(){var p=document.querySelector('#ui-dev-modal .modal-box');if(!p||document.getElementById('dev-homework-recipients'))return;var h=document.createElement('div');h.id='dev-homework-recipients';h.innerHTML='<div style="margin-top:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>Homework recipients</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">Choose one or more students.</div><div>'+DEV_HOMEWORK_USERS.map(function(u){return '<label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px;border-radius:10px;background:rgba(255,255,255,.04);margin:6px 0"><span><b>'+escapeHTML(u.name)+'</b><br><small>'+escapeHTML(u.email)+'</small></span><input type="checkbox" class="dev-user-check" value="'+u.uid+'"></label>'}).join('')+'</div><button onclick="sendSelectedHomework()" style="width:100%;margin-top:8px;padding:10px;border:0;border-radius:10px;font-weight:800">Send to selected</button></div>';p.appendChild(h);}
-async function sendSelectedHomework(){if(!isDeveloper())return alert('Developer account required.');if(!fbDb)return alert('Firebase is not ready yet.');var cs=document.querySelectorAll('.dev-user-check:checked'),title=(document.getElementById('dev-hw-title').value||'').trim(),subject=(document.getElementById('dev-hw-subject').value||'').trim(),due=document.getElementById('dev-hw-due').value||'',instructions=(document.getElementById('dev-hw-instructions').value||'').trim();if(!cs.length)return alert('Select at least one student.');if(!title)return alert('Give the homework a title first.');var sent=0;for(var i=0;i<cs.length;i++){var uid=cs[i].value;try{var ref=fbDb.collection('users').doc(uid),snap=await ref.get(),data=snap.exists?snap.data():{},tasks=Array.isArray(data.tasks)?data.tasks:[];tasks.unshift({id:'hw'+Date.now()+'_'+i,text:title,done:false,due:due,subject:subject,instructions:instructions,source:'developer',assignedAt:new Date().toISOString()});await ref.set({tasks:tasks},{merge:true});sent++;}catch(e){if(window.console&&console.error)console.error(e);}}alert('Homework sent to '+sent+' student(s).');}
+async function sendSelectedHomework(){if(!actualDeveloperAuth)return alert('This local developer unlock can manage your device, but sending homework to other student accounts requires the real developer Firebase account.');if(!fbDb)return alert('Firebase is not ready yet.');var cs=document.querySelectorAll('.dev-user-check:checked'),title=(document.getElementById('dev-hw-title').value||'').trim(),subject=(document.getElementById('dev-hw-subject').value||'').trim(),due=document.getElementById('dev-hw-due').value||'',instructions=(document.getElementById('dev-hw-instructions').value||'').trim();if(!cs.length)return alert('Select at least one student.');if(!title)return alert('Give the homework a title first.');var sent=0;for(var i=0;i<cs.length;i++){var uid=cs[i].value;try{var ref=fbDb.collection('users').doc(uid),snap=await ref.get(),data=snap.exists?snap.data():{},tasks=Array.isArray(data.tasks)?data.tasks:[];tasks.unshift({id:'hw'+Date.now()+'_'+i,text:title,done:false,due:due,subject:subject,instructions:instructions,source:'developer',assignedAt:new Date().toISOString()});await ref.set({tasks:tasks},{merge:true});sent++;}catch(e){if(window.console&&console.error)console.error(e);}}alert('Homework sent to '+sent+' student(s).');}
 document.addEventListener('DOMContentLoaded',function(){setTimeout(renderDevHomeworkRecipients,700);setInterval(renderDevHomeworkRecipients,2500);});
 </script></body>
 </html>

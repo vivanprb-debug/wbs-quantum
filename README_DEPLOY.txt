@@ -19,3 +19,10 @@ Firebase setup required:
 5. After replacing the hosted files, reload the PWA once so the new service worker activates.
 
 Important: the Firebase web configuration is intentionally included in the frontend because Firebase web apps require it. Do not put private server secrets in index.html.
+
+
+Version 5 upgrades:
+- Weather now includes a simple clothing suggestion based on feels-like temperature, rain chance, and wind.
+- Local developer-mode unlock in Settings > Developer Panel: type the configured developer email on your signed-in account. This is a front-end convenience only, not a security boundary. Firebase-protected admin actions still require the real developer Firebase account.
+- Added AI-only maintenance screen and separate app maintenance controls.
+- Added online/offline status, PWA install handling, smoother card/view animations, and reduced-motion support.

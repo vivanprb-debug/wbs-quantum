@@ -1,7 +1,7 @@
 // WBS Quantum Service Worker
 // Safe/offline fallback version
 
-const CACHE_NAME = "wbs-quantum-v4";
+const CACHE_NAME = "wbs-quantum-v5";
 
 self.addEventListener("install", (event) => {
   self.skipWaiting();
