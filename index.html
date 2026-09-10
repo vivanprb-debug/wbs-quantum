@@ -1,0 +1,2440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>WBS Quantum Dashboard</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#09090e">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WBS Quantum">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --glass-bg: rgba(20, 20, 35, 0.45);
+    --glass-bg-solid: rgba(24, 22, 38, 0.92);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --glass-highlight: rgba(255, 255, 255, 0.15);
+    --text-main: #ffffff;
+    --text-muted: #9497ad;
+    --accent-primary: #8b5cf6;
+    --accent-glow: rgba(139, 92, 246, 0.4);
+    --accent-secondary: #0ea5e9;
+    --amber: #f59e0b;
+    --emerald: #10b981;
+    --rose: #fb7185;
+    --safe-bottom: max(20px, env(safe-area-inset-bottom));
+    --ease-liquid: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+  html, body { height: 100%; }
+  @keyframes liquidDrift {
+    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+    50% { transform: translate3d(-4%, -3%, 0) rotate(1.5deg); }
+  }
+  body {
+    background: linear-gradient(-45deg, #09090e, #1a1025, #0d1425, #09090e);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+  }
+  .frame {
+    width: 100%;
+    max-width: 440px;
+    height: calc(100vh - 20px);
+    max-height: 940px;
+    margin: auto;
+    position: relative;
+    border: 1px solid var(--glass-border);
+    border-radius: 38px;
+    overflow: hidden;
+    box-shadow: 0 30px 80px -20px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(30px);
+    -webkit-backdrop-filter: blur(30px);
+  }
+  .viewport {
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at top left, rgba(255,255,255,0.04) 0%, transparent 40%),
+                radial-gradient(circle at bottom right, rgba(139,92,246,0.06) 0%, transparent 45%);
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+  .ambient-blob { position: absolute; border-radius: 50%; filter: blur(50px); opacity: 0.5; pointer-events: none; z-index: 0; will-change: transform; }
+  .blob-1 { width: 220px; height: 220px; background: radial-gradient(circle, rgba(139,92,246,0.45), transparent 70%); top: -60px; left: -60px; animation: drift1 16s ease-in-out infinite; }
+  .blob-2 { width: 180px; height: 180px; background: radial-gradient(circle, rgba(14,165,233,0.4), transparent 70%); bottom: 60px; right: -50px; animation: drift2 19s ease-in-out infinite; }
+  @keyframes drift1 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(30px, 40px) scale(1.15); } }
+  @keyframes drift2 { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-25px, -35px) scale(1.1); } }
+  .header { padding: 24px 22px 14px 22px; display: flex; justify-content: space-between; align-items: center; z-index: 10; }
+  .brand-group { display: flex; flex-direction: column; gap: 3px; }
+  .brand-title { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, #fff 30%, #a5b4fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.4px; }
+  .live-clock { font-size: 12px; font-weight: 600; color: var(--accent-secondary); letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px; }
+  .clock-dot { width: 6px; height: 6px; background: var(--accent-secondary); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(14,165,233,0.7); } 70% { box-shadow: 0 0 0 6px rgba(14,165,233,0); } 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0); } }
+  .btn-icon { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 14px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+  .btn-icon svg { width: 19px; height: 19px; fill: var(--text-main); }
+  .cal-wrapper { padding: 0 18px 14px 18px; z-index: 10; position: relative; }
+  .cal-strip { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 4px 2px 6px 2px; scroll-behavior: smooth; -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain; }
+  .cal-strip::-webkit-scrollbar { display: none; }
+  .day-pill { min-width: 56px; padding: 10px 6px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; transition: all 0.25s ease; flex-shrink: 0; }
+  .day-pill.active { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); border-color: rgba(255,255,255,0.3); box-shadow: 0 8px 20px var(--accent-glow); transform: translateY(-3px); }
+  .day-pill .d-name { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); }
+  .day-pill.active .d-name { color: rgba(255,255,255,0.9); }
+  .day-pill .d-num { font-size: 17px; font-weight: 800; line-height: 1; }
+  .day-pill .d-wk { font-size: 9px; font-weight: 800; opacity: 0.7; }
+  .day-pill.is-today { border-color: rgba(139,92,246,0.6); }
+  .content-area { flex: 1; overflow-y: auto; padding: 0 18px calc(96px + var(--safe-bottom)) 18px; scrollbar-width: none; -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; }
+  .content-area::-webkit-scrollbar { display: none; }
+  .tab-view { display: none; }
+  .tab-view.active { display: block; animation: viewIn 0.45s var(--ease-smooth); will-change: transform, opacity; }
+  @keyframes viewIn { from { opacity: 0; transform: translateY(14px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .stagger-in { opacity: 0; animation: fadeUp 0.45s var(--ease-smooth) forwards; }
+  .tap-scale { transition: transform 0.15s var(--ease-smooth); }
+  .tap-scale:active { transform: scale(0.96); }
+  .dev-link { text-align: center; font-size: 11px; color: rgba(255,255,255,0.22); font-weight: 600; letter-spacing: 0.5px; margin-top: 18px; padding: 6px; cursor: pointer; }
+  .dev-link:active { color: rgba(255,255,255,0.45); }
+  .homework-item { border-radius: 18px; padding: 14px 16px; margin-bottom: 10px; background: rgba(255,255,255,0.045); border: 1px solid var(--glass-border); border-left: 3px solid var(--accent-primary); transition: transform 0.15s var(--ease-smooth), background 0.2s ease; }
+  .homework-item:active { transform: scale(0.98); }
+  .homework-item.completed { opacity: 0.5; }
+  .homework-item.completed .homework-title { text-decoration: line-through; }
+  .homework-top { display: flex; align-items: flex-start; gap: 10px; }
+  .homework-title { font-size: 14.5px; font-weight: 700; }
+  .homework-subject { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 2px; }
+  .homework-instructions { font-size: 12.5px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; max-height: 0; overflow: hidden; transition: max-height 0.3s var(--ease-smooth); }
+  .homework-instructions.open { max-height: 400px; }
+  .homework-toggle { font-size: 11px; color: var(--accent-secondary); font-weight: 700; margin-top: 6px; cursor: pointer; }
+  .weather-icon { display: inline-block; vertical-align: middle; margin-right: 4px; }
+  .confetti-piece { position: fixed; top: -20px; border-radius: 2px; pointer-events: none; z-index: 900; animation: confettiFall linear forwards; will-change: transform; }
+  @keyframes confettiFall {
+    to { transform: translateY(110vh) rotate(560deg); opacity: 0.3; }
+  }
+  .greeting-box { margin-bottom: 18px; }
+  .g-title { font-size: 25px; font-weight: 800; letter-spacing: -0.4px; }
+  .g-sub { font-size: 13px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+  .hero-wrap { padding: 18px 4px 6px 4px; text-align: center; }
+  .hero-clock { font-size: 52px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; background: linear-gradient(135deg, #fff 20%, #a5b4fc 80%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero-date { font-size: 13.5px; color: var(--text-muted); font-weight: 600; margin-top: 8px; }
+  .hero-greet { font-size: 22px; font-weight: 800; margin-top: 18px; }
+  .hero-sub { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; margin-top: 20px; }
+  .quick-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 15px; text-align: left; box-shadow: 0 8px 20px rgba(0,0,0,0.18); }
+  .quick-card .q-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-muted); margin-bottom: 6px; }
+  .quick-card .q-value { font-size: 15px; font-weight: 700; }
+  .quick-card .q-value.small { font-size: 12.5px; font-weight: 600; color: var(--text-muted); }
+  .glass-card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 22px; padding: 18px; margin-bottom: 14px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+  .glass-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); }
+  .badge { font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; padding: 5px 9px; border-radius: 8px; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+  .bg-blue { background: rgba(14,165,233,0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3); }
+  .bg-emerald { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+  .bg-amber { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+  .bg-rose { background: rgba(251,113,133,0.15); color: #fda4af; border: 1px solid rgba(251,113,133,0.3); }
+  .card-title { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
+  .card-meta { font-size: 12.5px; color: var(--text-muted); font-weight: 500; }
+  .progress-track { height: 7px; background: rgba(0,0,0,0.3); border-radius: 4px; overflow: hidden; margin: 14px 0 6px 0; border: 1px solid var(--glass-border); }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); width: 0%; border-radius: 4px; transition: width 1s ease; }
+  .section-header { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.3px; margin: 22px 2px 10px 2px; }
+  .timeline-item { display: flex; gap: 14px; padding: 14px; border-radius: 18px; background: rgba(255,255,255,0.025); border: 1px solid transparent; margin-bottom: 9px; border-left: 3px solid transparent; }
+  .timeline-item.active { background: rgba(14,165,233,0.08); border-color: rgba(14,165,233,0.3); }
+  .t-time { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 48px; }
+  .t-time-start { font-size: 12.5px; font-weight: 800; }
+  .t-time-end { font-size: 10.5px; font-weight: 600; color: var(--text-muted); margin-top: 2px; }
+  .t-info { flex: 1; border-left: 1px solid var(--glass-border); padding-left: 14px; display: flex; flex-direction: column; justify-content: center; }
+  .t-info-title { font-size: 14.5px; font-weight: 700; }
+  .t-info-meta { font-size: 11.5px; color: var(--text-muted); margin-top: 3px; font-weight: 500; }
+  .now-pill { font-size: 9px; font-weight: 800; color: #38bdf8; background: rgba(14,165,233,0.15); padding: 3px 7px; border-radius: 6px; margin-left: 8px; letter-spacing: 0.5px; }
+  .input-group { display: flex; gap: 9px; margin-bottom: 18px; }
+  .glass-input { flex: 1; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 15px; padding: 13px 16px; color: white; outline: none; font-size: 14.5px; }
+  .glass-input:focus { border-color: var(--accent-primary); }
+  .glass-input::placeholder { color: var(--text-muted); }
+  .btn-primary { background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary)); border: none; border-radius: 15px; padding: 0 18px; color: white; font-weight: 700; font-size: 14px; cursor: pointer; box-shadow: 0 4px 15px var(--accent-glow); white-space: nowrap; }
+  .btn-primary:active { transform: scale(0.96); }
+  .btn-ghost { background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); border-radius: 12px; padding: 9px 14px; color: white; font-weight: 700; font-size: 12.5px; cursor: pointer; }
+  .task-item { display: flex; align-items: center; gap: 12px; padding: 15px; background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 16px; margin-bottom: 9px; }
+  .task-item.completed { opacity: 0.45; }
+  .task-item.completed .task-text { text-decoration: line-through; }
+  .task-checkbox { appearance: none; -webkit-appearance: none; width: 21px; height: 21px; min-width: 21px; border: 2px solid var(--text-muted); border-radius: 7px; cursor: pointer; position: relative; }
+  .task-checkbox:checked { background: var(--emerald); border-color: var(--emerald); }
+  .task-checkbox:checked::after { content: '\2713'; position: absolute; color: white; font-size: 13px; font-weight: 900; top: 50%; left: 50%; transform: translate(-50%,-52%); }
+  .task-text { flex: 1; font-size: 14.5px; font-weight: 600; }
+  .task-del { background: none; border: none; color: var(--rose); font-size: 18px; cursor: pointer; padding: 4px 6px; opacity: 0.7; }
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+  .empty-state .e-icon { font-size: 34px; margin-bottom: 10px; }
+  .empty-state .e-text { font-size: 13.5px; font-weight: 500; }
+  .exam-item { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 18px; padding: 16px; margin-bottom: 12px; }
+  .exam-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .exam-subject { font-size: 15.5px; font-weight: 700; }
+  .exam-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+  .exam-countdown { font-size: 10px; font-weight: 800; padding: 5px 9px; border-radius: 8px; white-space: nowrap; }
+  .exam-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .exam-actions .btn-ghost { flex: 1; text-align: center; }
+  .chat-container { display: flex; flex-direction: column; gap: 14px; padding-bottom: 14px; }
+  .chat-msg { max-width: 85%; padding: 13px 16px; border-radius: 20px; font-size: 14px; line-height: 1.5; font-weight: 500; white-space: pre-wrap; }
+  .msg-user { background: linear-gradient(135deg, var(--accent-primary), #6d28d9); align-self: flex-end; border-bottom-right-radius: 4px; margin-left: auto; }
+  .msg-ai { background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border); align-self: flex-start; border-bottom-left-radius: 4px; }
+  .msg-error { background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.3); color: #fda4af; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .typing-dots { display: flex; gap: 4px; align-self: flex-start; padding: 13px 16px; background: rgba(255,255,255,0.08); border-radius: 20px; border-bottom-left-radius: 4px; }
+  .typing-dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--text-muted); animation: bounce 1.2s infinite; }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-4px); opacity: 1; } }
+  .dock-wrapper { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 14px calc(10px + var(--safe-bottom)) 14px; background: linear-gradient(to top, rgba(9,9,14,0.96) 45%, rgba(9,9,14,0.75)); backdrop-filter: blur(20px); border-top: 1px solid rgba(255,255,255,0.05); z-index: 100; }
+  .dock-nav { position: relative; display: flex; justify-content: space-between; align-items: center; max-width: 400px; margin: 0 auto; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .dock-liquid { position: absolute; top: -6px; height: 62px; border-radius: 22px; background: linear-gradient(160deg, rgba(139,92,246,0.35), rgba(14,165,233,0.28)); border: 1px solid rgba(255,255,255,0.25); box-shadow: 0 8px 24px rgba(139,92,246,0.35), inset 0 1px 0 rgba(255,255,255,0.3); backdrop-filter: blur(10px); pointer-events: none; transition: transform 0.32s var(--ease-liquid), width 0.32s var(--ease-liquid), border-radius 0.2s ease; z-index: 0; will-change: transform, width; }
+  .dock-liquid.dragging { transition: transform 0.08s linear; }
+  .dock-btn { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--text-muted); font-size: 9.5px; font-weight: 700; cursor: pointer; flex: 1; padding: 8px 2px; border-radius: 18px; transition: color 0.25s ease; }
+  .dock-btn svg { width: 21px; height: 21px; fill: currentColor; transition: transform 0.3s var(--ease-liquid); }
+  .dock-btn.active { color: #fff; }
+  .dock-btn.active svg { fill: #fff; transform: translateY(-2px) scale(1.08); filter: drop-shadow(0 2px 8px rgba(14,165,233,0.5)); }
+  .modal-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; opacity: 0; pointer-events: none; transition: 0.25s ease; }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal-box { width: 100%; max-width: 340px; transform: scale(0.95); transition: 0.25s ease; max-height: 80vh; overflow-y: auto; }
+  .modal-overlay.open .modal-box { transform: scale(1); }
+  .field-label { font-size: 11.5px; font-weight: 700; color: var(--text-muted); margin-bottom: 6px; display: block; text-transform: uppercase; letter-spacing: 0.5px; }
+  .field-group { margin-bottom: 14px; }
+  .row-2 { display: flex; gap: 10px; }
+  .row-2 > * { flex: 1; }
+  a.link-reset { text-decoration: none; color: inherit; }
+  .login-overlay { position: absolute; inset: 0; z-index: 500; display: flex; flex-direction: column; justify-content: center; padding: 32px 26px; background: #09090e; overflow: hidden; }
+  .login-overlay::before { content: ''; position: absolute; top: -25%; left: -25%; width: 150%; height: 150%; background: linear-gradient(-45deg, #09090e, #1a1025, #0d1425, #09090e); background-size: 200% 200%; animation: liquidDrift 20s ease infinite; will-change: transform; z-index: -1; }
+  .login-overlay.hidden { display: none; }
+  .login-logo { width: 68px; height: 68px; border-radius: 20px; margin: 0 auto 22px auto; box-shadow: 0 12px 30px rgba(139,92,246,0.4); }
+  .login-title { font-size: 24px; font-weight: 800; text-align: center; letter-spacing: -0.4px; }
+  .login-sub { font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 6px; margin-bottom: 28px; }
+  .login-field { margin-bottom: 13px; }
+  .login-error { font-size: 12.5px; color: #fda4af; background: rgba(251,113,133,0.12); border: 1px solid rgba(251,113,133,0.3); border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; display: none; }
+  .login-error.show { display: block; }
+  .login-forgot { text-align: center; font-size: 12.5px; color: var(--accent-secondary); font-weight: 700; margin-top: 16px; cursor: pointer; }
+  .login-loading { text-align: center; font-size: 13px; color: var(--text-muted); margin-top: 16px; display: none; }
+  .login-loading.show { display: block; }
+  #app-viewport { display: none; }
+  #app-viewport.ready { display: flex; }
+</style>
+<style id="day-streak-css">.day-streak-card{margin:12px 0;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(20,20,35,.45);backdrop-filter:blur(18px)}.day-streak-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.day-streak-title{font-weight:800;font-size:15px}.day-streak-count{font-size:30px;font-weight:800}.day-streak-sub{color:#9497ad;font-size:12px;margin-top:5px}.day-streak-fire{font-size:25px}.day-streak-btn{margin-top:12px;width:100%;border:0;border-radius:12px;padding:10px 12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#8b5cf6,#0ea5e9)}.day-streak-btn:disabled{opacity:.6}</style>
+<style id="maintenance-mode-css">
+#maintenance-overlay{position:fixed;inset:0;z-index:99999;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(9,9,14,.97);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+#maintenance-overlay.open{display:flex}
+.maintenance-card{width:100%;max-width:420px;text-align:center;padding:30px 22px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:rgba(25,23,40,.96);box-shadow:0 20px 70px rgba(0,0,0,.45)}
+.maintenance-icon{font-size:48px;margin-bottom:12px}.maintenance-title{font-size:25px;font-weight:800}.maintenance-text{margin-top:9px;color:#a9abc0;line-height:1.55;font-size:14px}.maintenance-dev{margin-top:20px;padding:10px 12px;border-radius:12px;background:rgba(139,92,246,.12);color:#c4b5fd;font-size:12px;display:none}
+</style>
+<style id="west-bridgford-weather-css">
+.weather-local-card{margin:12px 0;padding:16px}.weather-local-head{display:flex;justify-content:space-between;align-items:center;gap:12px}.weather-local-title{font-weight:800;font-size:18px}.weather-local-sub{font-size:12px;opacity:.68;margin-top:3px}.weather-local-temp{font-size:42px;font-weight:800;line-height:1}.weather-local-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;font-size:12px;opacity:.82}.weather-local-meta span{padding:6px 8px;border-radius:999px;background:rgba(255,255,255,.05)}.weather-section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:16px 0 8px}.weather-hours,.weather-days{display:flex;gap:7px;overflow-x:auto;padding-bottom:2px}.weather-hour,.weather-day{min-width:68px;text-align:center;padding:9px 6px;border-radius:12px;background:rgba(255,255,255,.045);display:flex;flex-direction:column;gap:5px;font-size:12px}.weather-hour span:nth-child(2),.weather-day span:nth-child(2){font-size:20px}.weather-hour small,.weather-day small{opacity:.65}.weather-source{font-size:10px;opacity:.45;margin-top:12px}</style>
+
+<style id="leaderboard-css">#ui-leaderboard{display:flex;flex-direction:column;gap:10px}.leaderboard-card{padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(20,20,35,.45);backdrop-filter:blur(18px)}.leaderboard-row{display:grid;grid-template-columns:42px 1fr auto;align-items:center;gap:10px}.leaderboard-rank{font-size:16px;font-weight:900;text-align:center}.leaderboard-name{font-weight:800}.leaderboard-meta{font-size:11px;color:#9497ad;margin-top:3px}.leaderboard-score{font-size:22px;font-weight:900}.leaderboard-me{border-color:rgba(139,92,246,.45);box-shadow:0 0 0 1px rgba(139,92,246,.08) inset}</style>
+</head>
+<body>
+<div id="maintenance-overlay" aria-live="polite">
+  <div class="maintenance-card">
+    <div class="maintenance-icon">🛠️</div>
+    <div class="maintenance-title">WBS Quantum is under maintenance</div>
+    <div class="maintenance-text">The app is temporarily unavailable while updates are being made. Please try again shortly.</div>
+    <div id="maintenance-dev" class="maintenance-dev">Developer access active — maintenance mode is bypassed.</div>
+  </div>
+</div>
+
+
+<div class="frame">
+<div class="login-overlay" id="login-overlay">
+  <img class="login-logo" src="icon-192.png" alt="">
+  <div class="login-title">WBS Quantum</div>
+  <div class="login-sub">Sign in to sync your schedule, tasks and exams.</div>
+  <div class="login-error" id="login-error"></div>
+  <div class="login-field"><input type="email" id="login-email" class="glass-input" placeholder="Email" style="width:100%;" autocomplete="username"></div>
+  <div class="login-field"><input type="password" id="login-password" class="glass-input" placeholder="Password" style="width:100%;" autocomplete="current-password"></div>
+  <button class="btn-primary" style="width:100%; height:46px;" onclick="handleLogin()">Sign In</button>
+  <div class="login-forgot" onclick="handleForgotPassword()">Forgot password?</div>
+  <div class="login-loading" id="login-loading">Signing in...</div>
+</div>
+
+<div class="viewport" id="app-viewport">
+
+  <div class="ambient-blob blob-1"></div>
+  <div class="ambient-blob blob-2"></div>
+
+  <header class="header">
+    <div class="brand-group">
+      <h1 class="brand-title">WBS Quantum</h1>
+      <div class="live-clock"><div class="clock-dot"></div><span id="ui-time">00:00:00</span></div>
+    </div>
+    <button class="btn-icon" onclick="toggleSettings(true)" aria-label="Settings">
+      <svg viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+    </button>
+  </header>
+
+  <div class="cal-wrapper"><div class="cal-strip" id="ui-calendar"></div></div>
+
+  <main class="content-area">
+
+    <section class="tab-view active" id="view-home">
+      <div class="hero-wrap">
+        <div class="hero-clock" id="hero-time">00:00</div>
+        <div class="hero-date" id="hero-date"></div>
+        <div class="hero-greet" id="hero-greet">Loading...</div>
+        <div class="hero-sub" id="hero-sub"></div>
+      </div>
+      <div class="quick-grid" id="ui-quick-grid"></div>
+    </section>
+
+    <section class="tab-view" id="view-schedule">
+      <div class="greeting-box">
+        <h2 class="g-title">Schedule</h2>
+        <p class="g-sub" id="ui-date-text"></p>
+      </div>
+      <div id="ui-holiday-zone"></div>
+      <div id="ui-alert-zone"></div>
+      <div id="ui-live-zone"></div>
+      <div id="ui-timeline-wrap">
+        <h3 class="section-header">Full Day Timeline</h3>
+        <div id="ui-timeline-zone"></div>
+      </div>
+    </section>
+
+    <section class="tab-view" id="view-tasks">
+      <div class="greeting-box">
+        <h2 class="g-title">Your Tasks</h2>
+        <p class="g-sub">Homework, revision, anything to get done.</p>
+      </div>
+      <div class="input-group">
+        <input type="text" id="task-input" class="glass-input" placeholder="e.g. Maths Hegarty page 12...">
+        <input type="date" id="task-due-input" class="glass-input" style="flex:0 0 128px;">
+        <button class="btn-primary" onclick="addTask()">Add</button>
+      </div>
+      <div id="ui-task-list"></div>
+    </section>
+
+    <section class="tab-view" id="view-exams">
+      <div class="greeting-box">
+        <h2 class="g-title">Exams</h2>
+        <p class="g-sub">Add one, then drop it straight into your calendar.</p>
+      </div>
+      <div class="glass-card">
+        <span class="badge bg-blue">New Exam</span>
+        <div class="field-group"><span class="field-label">Subject</span><input type="text" id="exam-subject" class="glass-input" placeholder="e.g. Chemistry" style="width:100%;"></div>
+        <div class="row-2" style="margin-bottom:14px;">
+          <div><span class="field-label">Date</span><input type="date" id="exam-date" class="glass-input" style="width:100%;"></div>
+          <div><span class="field-label">Time</span><input type="time" id="exam-time" class="glass-input" style="width:100%;"></div>
+        </div>
+        <div class="field-group"><span class="field-label">Room (optional)</span><input type="text" id="exam-room" class="glass-input" placeholder="e.g. Sports Hall" style="width:100%;"></div>
+        <button class="btn-primary" style="width:100%; height:44px;" onclick="addExam()">Add Exam</button>
+      </div>
+      <h3 class="section-header">Upcoming</h3>
+      <div id="ui-exam-list"></div>
+    </section>
+
+    <section class="tab-view" id="view-ai">
+      <div class="greeting-box">
+        <h2 class="g-title">Quantum AI</h2>
+        <p class="g-sub" id="ai-sub">Set up your API key to start chatting.</p>
+      </div>
+      <div class="chat-container" id="ui-chat-box"></div>
+      <div class="input-group" style="margin-bottom:0; position: sticky; bottom: 0;">
+        <input type="text" id="ai-input" class="glass-input" placeholder="Message AI...">
+        <button class="btn-primary" onclick="handleSend()">Send</button>
+      </div>
+    </section>
+
+  
+      <section class="tab-view" id="view-leaderboard">
+        <div class="greeting-box">
+          <h2 class="g-title">Streak Leaderboard</h2>
+          <p class="g-sub">Keep your daily check-in going and climb the table.</p>
+        </div>
+        <div id="ui-leaderboard"></div>
+      </section>
+
+</main>
+
+  <nav class="dock-wrapper">
+    <div class="dock-nav" id="dock-nav">
+      <div class="dock-liquid" id="dock-liquid"></div>
+      <div class="dock-btn active" id="dock-home" onclick="switchView('view-home', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+        Home
+      </div>
+      <div class="dock-btn" id="dock-schedule" onclick="switchView('view-schedule', this)">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14z M7 10h2v7H7z M11 7h2v10h-2z M15 13h2v4h-2z"/></svg>
+        Schedule
+      </div>
+      <div class="dock-btn" id="dock-tasks" onclick="switchView('view-tasks', this)">
+        <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        Tasks
+      </div>
+      <div class="dock-btn" id="dock-exams" onclick="switchView('view-exams', this)">
+        <svg viewBox="0 0 24 24"><path d="M17 3H7c-1.1 0-2 .9-2 2v14l7-3 7 3V5c0-1.1-.9-2-2-2z"/></svg>
+        Exams
+      </div>
+      <div class="dock-btn" id="dock-ai" onclick="switchView('view-ai', this)">
+        <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+        Ask AI
+      </div>
+    
+      <div class="dock-btn" id="dock-leaderboard" onclick="switchView('view-leaderboard', this)">
+        <svg viewBox="0 0 24 24"><path d="M5 20h14v-2H5v2zM7 16h3V4H7v12zm7 0h3V8h-3v8zM10 16h4V6h-4v10z"/></svg>
+        Streaks
+      </div>
+    </div>
+  </nav>
+
+  <div class="modal-overlay" id="ui-modal">
+    <div class="modal-box glass-card">
+      <h2 class="card-title">System Config</h2>
+      <p class="card-meta" style="margin-bottom:18px;">Your key is stored only on this device.</p>
+      <div class="field-group">
+        <span class="field-label">Gemini API Key</span>
+        <input type="password" id="api-key-input" class="glass-input" placeholder="Paste your key..." style="width:100%;">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Model</span>
+        <input type="text" id="api-model-input" class="glass-input" placeholder="gemini-3.6-flash" style="width:100%;">
+        <p class="card-meta" style="margin-top:6px; font-size:11px;">Google renames/retires models often — if chat stops working, check ai.google.dev/gemini-api/docs/models and update this.</p>
+      </div>
+      <div class="field-group" style="border-top:1px solid var(--glass-border); padding-top:16px;">
+        <span class="field-label">Reminders</span>
+        <p class="card-meta" style="margin:4px 0 10px 0;">Get a notification for PE kit, tasks due, and exams coming up \u2014 when the app is open.</p>
+        <button class="btn-primary" style="width:100%; background:rgba(255,255,255,0.1); box-shadow:none;" id="notif-btn" onclick="handleEnableNotifications()">Enable Notifications</button>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:18px;">
+        <button class="btn-primary" style="flex:1;" onclick="saveConfig()">Save</button>
+        <button class="btn-primary" style="flex:1; background:rgba(255,255,255,0.1); box-shadow:none;" onclick="toggleSettings(false)">Cancel</button>
+      </div>
+      <div style="border-top:1px solid var(--glass-border); margin-top:18px; padding-top:14px;">
+        <div class="card-meta" id="ui-account-email" style="margin-bottom:10px;"></div>
+        <button class="btn-primary" style="width:100%; background:rgba(251,113,133,0.15); box-shadow:none; color:#fda4af;" onclick="handleLogout()">Log Out</button>
+      </div>
+      <div class="dev-link" onclick="handleDevUnlockPrompt()">Developer Panel</div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="ui-dev-modal">
+    <div class="modal-box glass-card">
+      <h2 class="card-title">Add Homework</h2>
+      <p class="card-meta" style="margin-bottom:18px;">Goes straight into this account's Tasks tab.</p>
+      <div class="field-group">
+        <span class="field-label">Title</span>
+        <input type="text" id="dev-hw-title" class="glass-input" placeholder="e.g. Chemistry worksheet" style="width:100%;">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Subject</span>
+        <input type="text" id="dev-hw-subject" class="glass-input" placeholder="e.g. Chemistry" style="width:100%;">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Due date</span>
+        <input type="date" id="dev-hw-due" class="glass-input" style="width:100%;">
+      </div>
+      <div class="field-group">
+        <span class="field-label">Instructions</span>
+        <textarea id="dev-hw-instructions" class="glass-input" rows="4" style="width:100%; resize:vertical; font-family:inherit;" placeholder="Full instructions, page numbers, links..."></textarea>
+      </div>
+      <div style="display:flex; gap:12px; margin-top:6px;">
+        <button class="btn-primary" style="flex:1;" onclick="devAddHomework()">Add</button>
+        <button class="btn-primary" style="flex:1; background:rgba(255,255,255,0.1); box-shadow:none;" onclick="toggleDevModal(false)">Close</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+
+<script>
+/* =====================================================================
+   WBS QUANTUM DASHBOARD
+   Written in plain ES5-style JavaScript on purpose: var (not let/const),
+   function expressions (not arrow functions), string concatenation (not
+   template literals), no optional chaining, no nullish coalescing, no
+   destructuring. This is so it boots reliably on older mobile webviews.
+   ===================================================================== */
+
+// ---------- Safe storage ----------
+var SafeStore = {
+  get: function (key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      return (v === null) ? fallback : v;
+    } catch (e) { return fallback; }
+  },
+  set: function (key, val) {
+    try { localStorage.setItem(key, val); return true; } catch (e) { return false; }
+  },
+  getJSON: function (key, fallback) {
+    try {
+      var v = localStorage.getItem(key);
+      if (v === null) return fallback;
+      var parsed = JSON.parse(v);
+      return (parsed === null || parsed === undefined) ? fallback : parsed;
+    } catch (e) { return fallback; }
+  },
+  setJSON: function (key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; } catch (e) { return false; }
+  }
+};
+
+// ---------- Firebase (auth + cloud sync) ----------
+var firebaseConfig = {
+  apiKey: "AIzaSyDORlGaiNIl6n_Dme4y--WXynjeqbSTNEY",
+  authDomain: "wbs-quantam.firebaseapp.com",
+  projectId: "wbs-quantam",
+  storageBucket: "wbs-quantam.firebasestorage.app",
+  messagingSenderId: "981877764308",
+  appId: "1:981877764308:web:77c9fd7cf91088e0034b41"
+};
+var fbApp = null, fbAuth = null, fbDb = null, currentUser = null, syncTimer = null;
+
+// If you later give me a second student's timetable, drop it in here keyed by
+// their Firebase Auth UID (Firebase Console -> Authentication -> Users -> copy the UID)
+// and it'll override WEEK_A/WEEK_B/PE_BLOCKS for that account only.
+var PROFILE_TIMETABLES = {
+  // Ryan - 9x1 Boys (Mr Clibbens for PE). Bi-weekly timetable, 2026-2027.
+  // Science is combined 9ad/Sc2 (Physics Mr King S10, Biology Miss Bermingham S3,
+  // Chemistry Mrs Perry S12) - rotated across the fortnight below.
+  'Nx8kPsp1NKhdJSio2PpRYDIvit22': {
+    weekA: {
+      1: [ // Monday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Physics', teacher: 'Mr King', room: 'S10' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [ // Tuesday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [ // Wednesday
+        { subject: 'Assembly', teacher: '', room: 'School Hall' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Biology', teacher: 'Miss Bermingham', room: 'S3' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' }
+      ],
+      4: [ // Thursday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E6' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' }
+      ],
+      5: [ // Friday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Chemistry', teacher: 'Mrs Perry', room: 'S12' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ]
+    },
+    weekB: {
+      1: [ // Monday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Physics', teacher: 'Mr King', room: 'S10' },
+        { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [ // Tuesday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [ // Wednesday
+        { subject: 'Assembly', teacher: '', room: 'School Hall' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' },
+        { subject: 'Biology', teacher: 'Miss Bermingham', room: 'S3' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ],
+      4: [ // Thursday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+        { subject: 'Chemistry', teacher: 'Mrs Perry', room: 'S12' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' }
+      ],
+      5: [ // Friday
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Chemistry', teacher: 'Mrs Perry', room: 'S12' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E5' }
+      ]
+    },
+    // 9x1 Boys PE rotation (Mr Clibbens). Same class as Shriyan so blocks align.
+    peBlocks: [
+      { wc: '2026-08-31', a: 'Rugby', b: 'Football', kit: 'Boots' },
+      { wc: '2026-10-05', a: 'Cross Country', b: 'Basketball', kit: 'Outdoor Kit' },
+      { wc: '2026-11-16', a: 'HRF', b: 'Swimming', kit: 'Swim Gear' },
+      { wc: '2027-01-04', a: 'Badminton', b: 'Hockey', kit: 'Shin Guards' },
+      { wc: '2027-02-01', a: 'Table Tennis', b: 'Sport Education', kit: 'Indoor Kit' },
+      { wc: '2027-03-08', a: 'Personal Survival', b: 'Sport Education', kit: 'Swim Kit' },
+      { wc: '2027-04-19', a: 'Athletics', b: 'Cricket', kit: 'Whites' },
+      { wc: '2027-05-17', a: 'Athletics', b: 'Volleyball', kit: 'Outdoor Kit' },
+      { wc: '2027-06-21', a: 'Athletics', b: 'Tennis', kit: 'Outdoor Kit' }
+    ]
+  },
+  // Shriyan - 2026-2027 exact timetable supplied by the user.
+  'o2Nv7qVfIoY5olElothK3YQnbGB2': {
+    weekA: {
+      1: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Biology', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Chemistry', teacher: 'Mr Higgs', room: 'S9' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' }
+      ],
+      4: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E6' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' }
+      ],
+      5: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L7' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Physics', teacher: 'Mr Foster', room: 'S13' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ]
+    },
+    weekB: {
+      1: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Biology', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L4' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L4' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' },
+        { subject: 'Chemistry', teacher: 'Mr Higgs', room: 'S9' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ],
+      4: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'Physics', teacher: 'Mr Foster', room: 'S13' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' }
+      ],
+      5: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Biology', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E5' }
+      ]
+    },
+    peBlocks: [
+      { wc: '2026-08-31', a: 'Rugby', b: 'Football' },
+      { wc: '2026-10-05', a: 'X-Country', b: 'Basketball' },
+      { wc: '2026-11-16', a: 'HRF', b: 'Swimming' },
+      { wc: '2027-01-04', a: 'Badminton', b: 'Hockey' },
+      { wc: '2027-02-01', a: 'Table Tennis', b: 'Sport Education' },
+      { wc: '2027-03-08', a: 'Personal Survival' },
+      { wc: '2027-04-19', a: 'Athletics', b: 'Cricket' },
+      { wc: '2027-05-17', b: 'Volleyball' }
+    ]
+  },
+
+  // Freddie - 2026-2027 exact timetable supplied by the user.
+  'YAF3QAxWhJRzFDvqDSBSp1xUHxH3': {
+    weekA: {
+      1: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'Science (Biology)', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Science (Chemistry)', teacher: 'Mr Higgs', room: 'S9' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' }
+      ],
+      4: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E6' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' }
+      ],
+      5: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L4' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'Science (Physics)', teacher: 'Mr Foster', room: 'S13' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ]
+    },
+    weekB: {
+      1: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Science (Biology)', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L4' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+      ],
+      2: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Spanish', teacher: 'Miss Gamero', room: 'L4' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+      ],
+      3: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' },
+        { subject: 'Science (Chemistry)', teacher: 'Mr Higgs', room: 'S9' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'PE', teacher: 'Mr Clibbens', room: 'PE Area' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' }
+      ],
+      4: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+        { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+        { subject: 'French', teacher: 'Miss Williams', room: 'L1' },
+        { subject: 'Science (Physics)', teacher: 'Mr Foster', room: 'S13' },
+        { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' }
+      ],
+      5: [
+        { subject: 'Form Time', teacher: '', room: 'S6' },
+        { subject: 'Science (Biology)', teacher: 'Miss Brown', room: 'S4' },
+        { subject: 'Maths', teacher: 'Mrs Bethell', room: 'M8' },
+        { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' },
+        { subject: 'English', teacher: 'Miss Davies', room: 'E5' },
+        { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E5' }
+      ]
+    },
+    peBlocks: [
+      { wc: '2026-08-31', a: 'Rugby', b: 'Football' },
+      { wc: '2026-10-05', a: 'X-Country', b: 'Basketball' },
+      { wc: '2026-11-16', a: 'HRF', b: 'Swimming' },
+      { wc: '2027-01-04', a: 'Badminton', b: 'Hockey' },
+      { wc: '2027-02-01', a: 'Table Tennis', b: 'Sport Education' },
+      { wc: '2027-03-08', a: 'Personal Survival' },
+      { wc: '2027-04-19', a: 'Athletics', b: 'Cricket' },
+      { wc: '2027-05-17', b: 'Volleyball' }
+    ]
+  },
+};
+
+var PROFILE_NAMES = {
+  'lMJrosbRgtVXmuRz7gZUxAlBMn53': 'Vivan',
+  'o2Nv7qVfIoY5olElothK3YQnbGB2': 'Shriyan',
+  'Nx8kPsp1NKhdJSio2PpRYDIvit22': 'Ryan',
+  'YAF3QAxWhJRzFDvqDSBSp1xUHxH3': 'Freddie'
+};
+
+function initFirebase() {
+  fbApp = firebase.initializeApp(firebaseConfig);
+  fbAuth = firebase.auth();
+  fbDb = firebase.firestore();
+  fbAuth.onAuthStateChanged(function (user) {
+    if (user) {
+      currentUser = user;
+      document.getElementById('login-error').className = 'login-error';
+      loadMaintenanceState();
+      pullCloudData(user).then(function () { enterApp(); renderMaintenanceState(); safeRun(loadLeaderboard); safeRun(syncCurrentStreakToCloud); });
+    } else {
+      currentUser = null;
+      document.getElementById('app-viewport').className = 'viewport';
+      document.getElementById('login-overlay').className = 'login-overlay';
+      setLoginLoading(false);
+    }
+  });
+}
+
+function setLoginLoading(isLoading) {
+  document.getElementById('login-loading').className = 'login-loading' + (isLoading ? ' show' : '');
+}
+function showLoginError(msg) {
+  var el = document.getElementById('login-error');
+  el.innerText = msg;
+  el.className = 'login-error show';
+}
+
+function handleLogin() {
+  var email = document.getElementById('login-email').value.replace(/^\s+|\s+$/g, '');
+  var pass = document.getElementById('login-password').value;
+  if (!email || !pass) { showLoginError('Enter your email and password.'); return; }
+  document.getElementById('login-error').className = 'login-error';
+  setLoginLoading(true);
+  fbAuth.signInWithEmailAndPassword(email, pass).catch(function (err) {
+    setLoginLoading(false);
+    var msg = 'Could not sign in.';
+    if (err && err.code === 'auth/invalid-email') msg = 'That email address looks invalid.';
+    else if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) msg = 'Wrong email or password.';
+    else if (err && err.code === 'auth/user-not-found') msg = 'No account with that email yet.';
+    else if (err && err.code === 'auth/network-request-failed') msg = 'No internet connection.';
+    else if (err && err.message) msg = err.message;
+    showLoginError(msg);
+  });
+}
+
+function handleForgotPassword() {
+  var email = document.getElementById('login-email').value.replace(/^\s+|\s+$/g, '');
+  if (!email) { showLoginError('Type your email above first, then tap "Forgot password?" again.'); return; }
+  fbAuth.sendPasswordResetEmail(email).then(function () {
+    showLoginError('Password reset email sent \u2014 check your inbox.');
+  }).catch(function (err) {
+    showLoginError((err && err.message) ? err.message : 'Could not send reset email.');
+  });
+}
+
+function handleLogout() {
+  toggleSettings(false);
+  fbAuth.signOut().then(function () { location.reload(); });
+}
+
+function enterApp() {
+  applyProfileTimetable(currentUser.uid);
+  document.getElementById('login-overlay').className = 'login-overlay hidden';
+  document.getElementById('app-viewport').className = 'viewport ready';
+  var accEl = document.getElementById('ui-account-email');
+  if (accEl) accEl.innerText = 'Signed in as ' + currentUser.email;
+  safeRun(boot);
+}
+
+function applyProfileTimetable(uid) {
+  var override = PROFILE_TIMETABLES[uid];
+  if (override) {
+    if (override.weekA) WEEK_A = override.weekA;
+    if (override.weekB) WEEK_B = override.weekB;
+    if (override.peBlocks) PE_BLOCKS = override.peBlocks;
+  }
+}
+
+function pullCloudData(user) {
+  return fbDb.collection('users').doc(user.uid).get().then(function (doc) {
+    if (doc.exists) {
+      var data = doc.data();
+      if (data.tasks) SafeStore.setJSON('wbs_tasks', data.tasks);
+      if (data.exams) SafeStore.setJSON('wbs_exams', data.exams);
+      if (data.chatHistory) SafeStore.setJSON('wbs_chat_history', data.chatHistory);
+      if (data.apiConfig) SafeStore.setJSON('wbs_api_config', data.apiConfig);
+    } else {
+      // First ever login for this account - seed the cloud doc from whatever's on this device.
+      fbDb.collection('users').doc(user.uid).set({
+        tasks: SafeStore.getJSON('wbs_tasks', []),
+        exams: SafeStore.getJSON('wbs_exams', []),
+        chatHistory: SafeStore.getJSON('wbs_chat_history', []),
+        apiConfig: SafeStore.getJSON('wbs_api_config', { key: '', model: 'gemini-3.6-flash' })
+      }).catch(function () {});
+    }
+  }).catch(function () {
+    // Offline or blocked - just fall back to whatever's cached locally on this device.
+  });
+}
+
+function syncToCloud() {
+  if (!currentUser || !fbDb) return;
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(function () {
+    try {
+      fbDb.collection('users').doc(currentUser.uid).set({
+        tasks: SafeStore.getJSON('wbs_tasks', []),
+        exams: SafeStore.getJSON('wbs_exams', []),
+        chatHistory: SafeStore.getJSON('wbs_chat_history', []),
+        apiConfig: SafeStore.getJSON('wbs_api_config', { key: '', model: 'gemini-3.6-flash' })
+      }, { merge: true }).catch(function () {});
+    } catch (e) {}
+  }, 900);
+}
+
+// ---------- Period times ----------
+var PERIODS = [
+  { id: 'Form', start: '08:30', end: '09:00' },
+  { id: 'P1',   start: '09:00', end: '10:00' },
+  { id: 'P2',   start: '10:00', end: '11:20' },
+  { id: 'P3',   start: '11:20', end: '12:20' },
+  { id: 'P4',   start: '12:20', end: '13:55' },
+  { id: 'P5',   start: '13:55', end: '14:55' }
+];
+
+// ---------- Full timetable (real teachers + real rooms, both weeks) ----------
+var WEEK_A = {
+  1: [ // Monday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'Biology', teacher: 'Miss Brown', room: 'S4' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' },
+    { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+  ],
+  2: [ // Tuesday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+    { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' },
+    { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+  ],
+  3: [ // Wednesday
+    { subject: 'Assembly', teacher: '', room: 'School Hall' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' },
+    { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+    { subject: 'PE', teacher: 'Mr Landa', room: 'PE Area' },
+    { subject: 'Physics', teacher: 'Mr Foster', room: 'S11' },
+    { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' }
+  ],
+  4: [ // Thursday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' },
+    { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E6' },
+    { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+    { subject: 'PE', teacher: 'Mr Landa', room: 'PE Area' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' }
+  ],
+  5: [ // Friday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+    { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+    { subject: 'Chemistry', teacher: 'Mr Higgs', room: 'S9' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' }
+  ]
+};
+
+var WEEK_B = {
+  1: [ // Monday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'Biology', teacher: 'Miss Brown', room: 'S4' },
+    { subject: 'German', teacher: 'Miss Campbell', room: 'L3' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' }
+  ],
+  2: [ // Tuesday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'Technology', teacher: 'Mr Milne', room: 'AD4' },
+    { subject: 'PE', teacher: 'Mr Landa', room: 'PE Area' },
+    { subject: 'RE', teacher: 'Mr Fryer', room: 'M3' }
+  ],
+  3: [ // Wednesday
+    { subject: 'Assembly', teacher: '', room: 'School Hall' },
+    { subject: 'Computing', teacher: 'Mr Eyre', room: 'CR1' },
+    { subject: 'Physics', teacher: 'Mr Foster', room: 'S11' },
+    { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+    { subject: 'PE', teacher: 'Mr Landa', room: 'PE Area' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' }
+  ],
+  4: [ // Thursday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'Art', teacher: 'Mrs Hickey', room: 'AD3' },
+    { subject: 'History', teacher: 'Mrs Hester', room: 'H9' },
+    { subject: 'French', teacher: 'Miss Lowry', room: 'L6' },
+    { subject: 'Chemistry', teacher: 'Mr Higgs', room: 'S9' },
+    { subject: 'Music', teacher: 'Mr Holloway', room: 'MU2' }
+  ],
+  5: [ // Friday
+    { subject: 'Form Time', teacher: '', room: 'S6' },
+    { subject: 'Chemistry', teacher: 'Mr Higgs', room: 'S9' },
+    { subject: 'Maths', teacher: 'Dr Smith', room: 'M7' },
+    { subject: 'Geography', teacher: 'Mrs Woodcock', room: 'H1' },
+    { subject: 'English', teacher: 'Mr Reid', room: 'E8' },
+    { subject: 'PSHE', teacher: 'Mr Taylor', room: 'E5' }
+  ]
+};
+
+// Which weekday number (getDay(): Mon=1...Fri=5) each week's two PE lessons fall on.
+// First entry = Sport A day, second entry = Sport B day (chronological order in the week).
+var WEEK_A_PE_DAYS = [3, 4]; // Wed, Thu
+var WEEK_B_PE_DAYS = [2, 3]; // Tue, Wed
+
+// ---------- PE rotation, sourced from the school's official 9X2 Boys sheet ----------
+// "wc" = week commencing (Monday). Each block runs until the next block's date.
+var PE_BLOCKS = [
+  { wc: '2026-08-31', a: 'Badminton', b: 'Basketball' },
+  { wc: '2026-10-05', a: 'HRF', b: 'Swimming' },
+  { wc: '2026-11-16', a: 'Rugby', b: 'Football' },
+  { wc: '2027-01-04', a: 'Hockey', b: 'Cross Country' },
+  { wc: '2027-02-01', a: 'Personal Survival', b: 'Sport Education' },
+  { wc: '2027-03-08', a: 'Table Tennis', b: 'Sport Education' },
+  { wc: '2027-04-19', a: 'Athletics', b: 'Tennis' },
+  { wc: '2027-05-17', a: 'Athletics', b: 'Cricket' },
+  { wc: '2027-06-21', a: 'Athletics', b: 'Volleyball' }
+];
+
+// Kit is looked up per sport (not per block) since Vivan and Shriyan's sport
+// pairings don't line up the same way.
+var SPORT_KIT_MAP = {
+  'Badminton': 'Indoor Kit',
+  'Basketball': 'Indoor Kit',
+  'HRF': 'Indoor Kit',
+  'Swimming': 'Swimming Kit',
+  'Rugby': 'Outdoor Kit + gum shield + football boots',
+  'Football': 'Outdoor Kit + shin pads + football boots',
+  'Hockey': 'Outdoor Kit + shin pads + gum shield + trainers',
+  'Cross Country': 'Indoor Kit',
+  'Personal Survival': 'Swimming Kit',
+  'Sport Education': 'Outdoor Kit',
+  'Table Tennis': 'Indoor Kit',
+  'Athletics': 'Indoor Kit',
+  'Tennis': 'Indoor Kit',
+  'Cricket': 'Indoor Kit',
+  'Volleyball': 'Indoor Kit'
+};
+function getKitForSport(sport) {
+  var base = SPORT_KIT_MAP[sport] || 'PE Kit';
+  if (sport === 'Cross Country') {
+    var w = getWeather();
+    if (w && (w.cold || w.wet)) {
+      return 'Indoor Kit + rugby top + football boots (' + (w.cold ? 'cold' : 'wet') + ' today)';
+    }
+    return 'Indoor Kit';
+  }
+  return base;
+}
+
+// ---------- School holidays ----------
+// Placeholder - waiting on exact term dates. Fill in objects like:
+// { start: '2026-10-19', end: '2026-10-30', label: 'October Half Term' }
+var HOLIDAYS = [];
+
+// ---------- Subject color coding ----------
+var SUBJECT_COLORS = {
+  'Form Time': '#9497ad', 'Assembly': '#9497ad',
+  'Maths': '#38bdf8', 'English': '#a78bfa',
+  'Biology': '#34d399', 'Chemistry': '#34d399', 'Physics': '#34d399',
+  'French': '#fbbf24', 'German': '#fbbf24',
+  'History': '#2dd4bf', 'Geography': '#2dd4bf', 'RE': '#2dd4bf', 'PSHE': '#2dd4bf',
+  'Art': '#f472b6', 'Music': '#f472b6', 'Technology': '#f472b6', 'Computing': '#f472b6',
+  'PE': '#fb7185'
+};
+function subjectColor(subject) {
+  var base = subject.split(' \u2014 ')[0];
+  var c = SUBJECT_COLORS[base];
+  return c ? c : '#8b5cf6';
+}
+
+// ---------- Date helpers (no arrow fns / template literals / destructuring) ----------
+function pad2(n) { n = Math.floor(n); return (n < 10 ? '0' : '') + n; }
+function ymd(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function parseISO(s) {
+  var parts = s.split('-');
+  return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+}
+function startOfDay(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function getMonday(d) {
+  var day = d.getDay();
+  var diff = (day === 0) ? -6 : (1 - day);
+  var m = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  m.setDate(m.getDate() + diff);
+  return m;
+}
+function timeToMinutes(t) {
+  var parts = t.split(':');
+  return parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+}
+var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+var DAY_NAMES_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function getWeekType(d) {
+  var anchor = parseISO('2026-08-31');
+  var mon = getMonday(d);
+  var diffMs = mon.getTime() - anchor.getTime();
+  var diffWeeks = Math.round(diffMs / (7 * 24 * 60 * 60 * 1000));
+  var mod = diffWeeks % 2;
+  if (mod < 0) mod += 2;
+  return (mod === 0) ? 'A' : 'B';
+}
+
+function getHolidayInfo(d) {
+  var day = startOfDay(d).getTime();
+  for (var i = 0; i < HOLIDAYS.length; i++) {
+    var h = HOLIDAYS[i];
+    var s = parseISO(h.start).getTime();
+    var e = parseISO(h.end).getTime();
+    if (day >= s && day <= e) return h;
+  }
+  return null;
+}
+
+function getPEBlock(d) {
+  var mon = getMonday(d).getTime();
+  var chosen = null;
+  for (var i = 0; i < PE_BLOCKS.length; i++) {
+    var wcTime = parseISO(PE_BLOCKS[i].wc).getTime();
+    if (wcTime <= mon) chosen = PE_BLOCKS[i];
+  }
+  return chosen;
+}
+
+function getDayClasses(d) {
+  var wt = getWeekType(d);
+  var dow = d.getDay();
+  var table = (wt === 'A') ? WEEK_A : WEEK_B;
+  var src = table[dow];
+  if (!src) return null;
+  var peDays = (wt === 'A') ? WEEK_A_PE_DAYS : WEEK_B_PE_DAYS;
+  var peBlock = getPEBlock(d);
+  var out = [];
+  for (var i = 0; i < src.length; i++) {
+    var c = src[i];
+    var entry = { subject: c.subject, teacher: c.teacher, room: c.room };
+    if (c.subject === 'PE' && peBlock) {
+      if (dow === peDays[0]) entry.subject = 'PE \u2014 ' + peBlock.a;
+      else if (dow === peDays[1]) entry.subject = 'PE \u2014 ' + peBlock.b;
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+// ---------- Global state ----------
+var selectedDate = new Date();
+var clockTimer = null;
+
+// ================= CALENDAR STRIP =================
+function renderCalendarStrip() {
+  var strip = document.getElementById('ui-calendar');
+  strip.innerHTML = '';
+  var today = startOfDay(new Date());
+  var base = new Date(today);
+  base.setDate(base.getDate() - 5);
+  for (var i = 0; i < 28; i++) {
+    var d = new Date(base);
+    d.setDate(base.getDate() + i);
+    (function (d) {
+      var isSelected = startOfDay(d).getTime() === startOfDay(selectedDate).getTime();
+      var isToday = startOfDay(d).getTime() === today.getTime();
+      var dow = d.getDay();
+      var isWeekend = (dow === 0 || dow === 6);
+      var pill = document.createElement('div');
+      pill.className = 'day-pill' + (isSelected ? ' active' : '') + (isToday && !isSelected ? ' is-today' : '');
+      pill.onclick = function () { selectedDate = d; renderCalendarStrip(); renderSchedule(); };
+      var wkLabel = isWeekend ? 'W/E' : ('Wk ' + getWeekType(d));
+      pill.innerHTML =
+        '<div class="d-name">' + DAY_NAMES[dow] + '</div>' +
+        '<div class="d-num">' + d.getDate() + '</div>' +
+        '<div class="d-wk">' + wkLabel + '</div>';
+      strip.appendChild(pill);
+      if (isSelected) { pill.setAttribute('data-selected', '1'); }
+    })(d);
+  }
+  var sel = strip.querySelector('[data-selected]');
+  if (sel) { sel.scrollIntoView({ inline: 'center', block: 'nearest' }); }
+}
+
+// ================= SCHEDULE TAB =================
+function renderSchedule() {
+  var now = new Date();
+  var isToday = startOfDay(now).getTime() === startOfDay(selectedDate).getTime();
+  var hr = now.getHours();
+  var greetWord = (hr < 12) ? 'Good Morning' : (hr < 18 ? 'Good Afternoon' : 'Good Evening');
+
+  document.getElementById('ui-date-text').innerText =
+    DAY_NAMES_FULL[selectedDate.getDay()] + ', ' + selectedDate.getDate() + ' ' + MONTH_NAMES[selectedDate.getMonth()] +
+    ' \u00b7 Week ' + getWeekType(selectedDate);
+
+  var holidayZone = document.getElementById('ui-holiday-zone');
+  var alertZone = document.getElementById('ui-alert-zone');
+  var liveZone = document.getElementById('ui-live-zone');
+  var timelineZone = document.getElementById('ui-timeline-zone');
+  var timelineWrap = document.getElementById('ui-timeline-wrap');
+  holidayZone.innerHTML = '';
+  alertZone.innerHTML = '';
+  liveZone.innerHTML = '';
+  timelineZone.innerHTML = '';
+
+  var holiday = getHolidayInfo(selectedDate);
+  if (holiday) {
+    holidayZone.innerHTML =
+      '<div class="glass-card" style="border-left:3px solid var(--emerald);">' +
+      '<span class="badge bg-emerald">No School</span>' +
+      '<div class="card-title">' + holiday.label + '</div>' +
+      '<div class="card-meta">Enjoy the break.</div></div>';
+    timelineWrap.style.display = 'none';
+    return;
+  }
+
+  var dow = selectedDate.getDay();
+  if (dow === 0 || dow === 6) {
+    liveZone.innerHTML =
+      '<div class="glass-card">' +
+      '<span class="badge bg-emerald">Weekend</span>' +
+      '<div class="card-title">No Classes</div>' +
+      '<div class="card-meta">Good time to catch up on tasks.</div></div>';
+    timelineWrap.style.display = 'none';
+    return;
+  }
+  timelineWrap.style.display = 'block';
+
+  var classes = getDayClasses(selectedDate);
+  var peBlock = getPEBlock(selectedDate);
+  var peDays = (getWeekType(selectedDate) === 'A') ? WEEK_A_PE_DAYS : WEEK_B_PE_DAYS;
+  var hasPEToday = (dow === peDays[0] || dow === peDays[1]);
+
+  if (hasPEToday && peBlock) {
+    var sport = (dow === peDays[0]) ? peBlock.a : peBlock.b;
+    alertZone.innerHTML =
+      '<div class="glass-card" style="border-left:3px solid var(--rose);">' +
+      '<span class="badge bg-rose">PE Kit Alert</span>' +
+      '<div class="card-title">' + sport + '</div>' +
+      '<div class="card-meta">Pack: ' + getKitForSport(sport) + '</div></div>';
+    if (isToday) {
+      var peVibeKey = ymd(now) + '-pe';
+      if (SafeStore.get('wbs_last_pe_vibe', '') !== peVibeKey) {
+        SafeStore.set('wbs_last_pe_vibe', peVibeKey);
+        vibrate([12, 30, 12]);
+      }
+    }
+  }
+
+  // Live "now" card
+  var curIdx = -1;
+  var nowMins = now.getHours() * 60 + now.getMinutes();
+  if (isToday) {
+    for (var i = 0; i < PERIODS.length; i++) {
+      var s = timeToMinutes(PERIODS[i].start), e = timeToMinutes(PERIODS[i].end);
+      if (nowMins >= s && nowMins < e) { curIdx = i; break; }
+    }
+  }
+
+  if (curIdx > -1) {
+    var cls = classes[curIdx];
+    var per = PERIODS[curIdx];
+    var s2 = timeToMinutes(per.start), e2 = timeToMinutes(per.end);
+    var pct = Math.max(0, Math.min(100, ((nowMins - s2) / (e2 - s2)) * 100));
+    var minsLeft = e2 - nowMins;
+    var metaLine = cls.teacher ? (cls.teacher + ' \u00b7 ' + cls.room) : cls.room;
+    liveZone.innerHTML =
+      '<div class="glass-card" style="border-left:3px solid ' + subjectColor(cls.subject) + ';">' +
+      '<span class="badge bg-blue">Happening Now</span>' +
+      '<div class="card-title">' + cls.subject + '</div>' +
+      '<div class="card-meta">' + metaLine + '</div>' +
+      '<div class="progress-track"><div class="progress-fill" style="width:' + pct + '%;"></div></div>' +
+      '<div class="card-meta">' + minsLeft + ' min remaining \u00b7 until ' + per.end + '</div>' +
+      '</div>';
+  } else if (isToday) {
+    var beforeSchool = nowMins < timeToMinutes(PERIODS[0].start);
+    var afterSchool = nowMins >= timeToMinutes(PERIODS[PERIODS.length - 1].end);
+    var statusText = beforeSchool ? 'School hasn\u2019t started yet' : (afterSchool ? 'School\u2019s finished for the day' : 'Between lessons');
+    liveZone.innerHTML =
+      '<div class="glass-card">' +
+      '<span class="badge bg-amber">Status</span>' +
+      '<div class="card-title">' + statusText + '</div>' +
+      '</div>';
+  }
+
+  // Full timeline
+  var html = '';
+  for (var j = 0; j < PERIODS.length; j++) {
+    var p = PERIODS[j];
+    var c = classes[j];
+    var isCur = (j === curIdx);
+    var metaLine2 = c.teacher ? (c.teacher + ' \u00b7 ' + c.room) : c.room;
+    html +=
+      '<div class="timeline-item stagger-in' + (isCur ? ' active' : '') + '" style="border-left-color:' + (isCur ? subjectColor(c.subject) : 'transparent') + '; animation-delay:' + (j * 55) + 'ms;">' +
+      '<div class="t-time"><div class="t-time-start">' + p.start + '</div><div class="t-time-end">' + p.end + '</div></div>' +
+      '<div class="t-info"><div class="t-info-title">' + c.subject + (isCur ? '<span class="now-pill">NOW</span>' : '') + '</div>' +
+      '<div class="t-info-meta">' + metaLine2 + '</div></div>' +
+      '</div>';
+  }
+  timelineZone.innerHTML = html;
+}
+
+// ================= HOME TAB =================
+function renderHome() {
+  var now = new Date();
+  var hr = now.getHours();
+  var greetWord = (hr < 5) ? 'Still up?' : (hr < 12 ? 'Good Morning' : (hr < 18 ? 'Good Afternoon' : 'Good Evening'));
+  var firstName = (currentUser && PROFILE_NAMES[currentUser.uid]) ? PROFILE_NAMES[currentUser.uid] : '';
+  document.getElementById('hero-greet').innerText = greetWord + (firstName ? (', ' + firstName) : '');
+  document.getElementById('hero-date').innerText =
+    DAY_NAMES_FULL[now.getDay()] + ', ' + now.getDate() + ' ' + MONTH_NAMES[now.getMonth()] + ' \u00b7 Week ' + getWeekType(now);
+
+  var holiday = getHolidayInfo(now);
+  var dow = now.getDay();
+  var grid = document.getElementById('ui-quick-grid');
+  var cards = '';
+  var wPhrase = weatherPhrase();
+  var wIcon = weatherIcon();
+  var wSuffix = wPhrase ? (' \u2014 ' + (wIcon ? ('<span class="weather-icon">' + wIcon + '</span>') : '') + wPhrase) : '';
+
+  if (holiday) {
+    document.getElementById('hero-sub').innerHTML = 'No school today \u2014 ' + holiday.label + wSuffix;
+    grid.innerHTML = '';
+    return;
+  }
+  if (dow === 0 || dow === 6) {
+    document.getElementById('hero-sub').innerHTML = 'It\u2019s the weekend' + wSuffix + '.';
+  } else {
+    document.getElementById('hero-sub').innerHTML = 'Here\u2019s where things stand right now' + wSuffix + '.';
+  }
+
+  // Current / next class
+  if (dow >= 1 && dow <= 5) {
+    var classes = getDayClasses(now);
+    var nowMins = now.getHours() * 60 + now.getMinutes();
+    var curIdx = -1, nextIdx = -1;
+    for (var i = 0; i < PERIODS.length; i++) {
+      var s = timeToMinutes(PERIODS[i].start), e = timeToMinutes(PERIODS[i].end);
+      if (nowMins >= s && nowMins < e) curIdx = i;
+      if (nextIdx === -1 && nowMins < s) nextIdx = i;
+    }
+    if (curIdx > -1) {
+      cards += '<div class="quick-card stagger-in"><div class="q-label">Right Now</div><div class="q-value">' + classes[curIdx].subject + '</div><div class="q-value small">' + (classes[curIdx].teacher ? classes[curIdx].teacher + ' \u00b7 ' : '') + classes[curIdx].room + '</div></div>';
+    } else if (nextIdx > -1) {
+      cards += '<div class="quick-card stagger-in"><div class="q-label">Next Up</div><div class="q-value">' + classes[nextIdx].subject + '</div><div class="q-value small">from ' + PERIODS[nextIdx].start + '</div></div>';
+    } else {
+      cards += '<div class="quick-card stagger-in"><div class="q-label">Today</div><div class="q-value small">School\u2019s finished</div></div>';
+    }
+
+    var peBlock = getPEBlock(now);
+    var peDays = (getWeekType(now) === 'A') ? WEEK_A_PE_DAYS : WEEK_B_PE_DAYS;
+    if (peBlock && (dow === peDays[0] || dow === peDays[1])) {
+      var sport = (dow === peDays[0]) ? peBlock.a : peBlock.b;
+      cards += '<div class="quick-card stagger-in" style="border-color:rgba(251,113,133,0.3);"><div class="q-label">PE Today</div><div class="q-value">' + sport + '</div><div class="q-value small">Pack: ' + getKitForSport(sport) + '</div></div>';
+    }
+  }
+
+  // Tasks outstanding
+  var tasks = loadTasks();
+  var openTasks = 0;
+  for (var t = 0; t < tasks.length; t++) { if (!tasks[t].done) openTasks++; }
+  cards += '<div class="quick-card stagger-in"><div class="q-label">Tasks Open</div><div class="q-value">' + openTasks + '</div><div class="q-value small">' + (openTasks === 0 ? 'All clear' : 'to do') + '</div></div>';
+
+  // Next exam
+  var exams = loadExams();
+  exams.sort(function (a, b) { return parseISO(a.date).getTime() - parseISO(b.date).getTime(); });
+  var nextExam = null;
+  for (var x = 0; x < exams.length; x++) { if (daysUntil(exams[x].date) >= 0) { nextExam = exams[x]; break; } }
+  if (nextExam) {
+    var du = daysUntil(nextExam.date);
+    cards += '<div class="quick-card stagger-in"><div class="q-label">Next Exam</div><div class="q-value">' + escapeHTML(nextExam.subject) + '</div><div class="q-value small">' + (du === 0 ? 'Today' : (du === 1 ? 'Tomorrow' : du + ' days away')) + '</div></div>';
+  } else {
+    cards += '<div class="quick-card stagger-in"><div class="q-label">Exams</div><div class="q-value small">None added yet</div></div>';
+  }
+
+  grid.innerHTML = cards;
+  var items = grid.getElementsByClassName('stagger-in');
+  for (var k = 0; k < items.length; k++) { items[k].style.animationDelay = (k * 70) + 'ms'; }
+}
+
+// ================= TASKS TAB =================
+function loadTasks() { return SafeStore.getJSON('wbs_tasks', []); }
+function saveTasks(list) { SafeStore.setJSON('wbs_tasks', list); syncToCloud(); }
+
+function taskDueLabel(due) {
+  if (!due) return '';
+  var d = daysUntil(due);
+  var dObj = parseISO(due);
+  var dateTxt = DAY_NAMES[dObj.getDay()] + ' ' + dObj.getDate() + ' ' + MONTH_NAMES[dObj.getMonth()];
+  if (d < 0) return { text: 'Overdue \u00b7 ' + dateTxt, cls: 'bg-rose' };
+  if (d === 0) return { text: 'Due today', cls: 'bg-rose' };
+  if (d === 1) return { text: 'Due tomorrow', cls: 'bg-amber' };
+  if (d <= 7) return { text: 'Due ' + dateTxt, cls: 'bg-amber' };
+  return { text: 'Due ' + dateTxt, cls: 'bg-blue' };
+}
+
+function renderTasks() {
+  var list = loadTasks();
+  var wrap = document.getElementById('ui-task-list');
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="e-icon">\u2713</div><div class="e-text">No tasks yet. Add your first one above.</div></div>';
+    return;
+  }
+  var sorted = list.slice();
+  sorted.sort(function (a, b) {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (!a.due && !b.due) return 0;
+    if (!a.due) return 1;
+    if (!b.due) return -1;
+    return parseISO(a.due).getTime() - parseISO(b.due).getTime();
+  });
+  var html = '';
+  for (var i = 0; i < sorted.length; i++) {
+    var t = sorted[i];
+    var dueBadge = (!t.done && t.due) ? taskDueLabel(t.due) : null;
+    if (t.source === 'dev') {
+      var accent = t.subject ? subjectColor(t.subject) : 'var(--accent-primary)';
+      html +=
+        '<div class="homework-item' + (t.done ? ' completed' : '') + '" style="border-left-color:' + accent + ';">' +
+        '<div class="homework-top">' +
+        '<input type="checkbox" class="task-checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTask(\'' + t.id + '\')">' +
+        '<div style="flex:1;">' +
+        '<div class="homework-title">' + escapeHTML(t.text) + '</div>' +
+        (t.subject ? ('<div class="homework-subject">' + escapeHTML(t.subject) + '</div>') : '') +
+        (dueBadge ? ('<span class="badge ' + dueBadge.cls + '" style="margin:5px 0 0 0;">' + dueBadge.text + '</span>') : '') +
+        '</div>' +
+        '<button class="task-del" onclick="deleteTask(\'' + t.id + '\')">\u00d7</button>' +
+        '</div>' +
+        (t.instructions ? (
+          '<div class="homework-toggle" id="hw-toggle-' + t.id + '" onclick="toggleHomeworkInstructions(\'' + t.id + '\')">Show instructions</div>' +
+          '<div class="homework-instructions" id="hw-instr-' + t.id + '">' + escapeHTML(t.instructions) + '</div>'
+        ) : '') +
+        '</div>';
+    } else {
+      html +=
+        '<div class="task-item' + (t.done ? ' completed' : '') + '">' +
+        '<input type="checkbox" class="task-checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTask(\'' + t.id + '\')">' +
+        '<div style="flex:1;">' +
+        '<div class="task-text">' + escapeHTML(t.text) + '</div>' +
+        (dueBadge ? ('<span class="badge ' + dueBadge.cls + '" style="margin:5px 0 0 0;">' + dueBadge.text + '</span>') : '') +
+        '</div>' +
+        '<button class="task-del" onclick="deleteTask(\'' + t.id + '\')">\u00d7</button>' +
+        '</div>';
+    }
+  }
+  wrap.innerHTML = html;
+}
+
+function toggleHomeworkInstructions(id) {
+  var el = document.getElementById('hw-instr-' + id);
+  var label = document.getElementById('hw-toggle-' + id);
+  if (!el) return;
+  var opening = el.className.indexOf('open') === -1;
+  el.className = 'homework-instructions' + (opening ? ' open' : '');
+  if (label) label.innerText = opening ? 'Hide instructions' : 'Show instructions';
+  vibrate(6);
+}
+
+function addTask() {
+  var input = document.getElementById('task-input');
+  var dueInput = document.getElementById('task-due-input');
+  var text = input.value.replace(/^\s+|\s+$/g, '');
+  if (text === '') return;
+  var list = loadTasks();
+  list.unshift({ id: 't' + Date.now(), text: text, done: false, due: dueInput.value || '' });
+  saveTasks(list);
+  input.value = '';
+  dueInput.value = '';
+  renderTasks();
+  safeRun(renderHome);
+}
+
+function toggleTask(id) {
+  var list = loadTasks();
+  var nowDone = false;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].id === id) { list[i].done = !list[i].done; nowDone = list[i].done; break; }
+  }
+  saveTasks(list);
+  renderTasks();
+  safeRun(renderHome);
+  if (nowDone) { vibrate(15); safeRun(checkAllTasksDoneToday); } else { vibrate(6); }
+}
+
+function deleteTask(id) {
+  var list = loadTasks();
+  var out = [];
+  for (var i = 0; i < list.length; i++) { if (list[i].id !== id) out.push(list[i]); }
+  saveTasks(out);
+  renderTasks();
+  safeRun(renderHome);
+}
+
+// ================= EXAMS TAB =================
+function loadExams() { return SafeStore.getJSON('wbs_exams', []); }
+function saveExams(list) { SafeStore.setJSON('wbs_exams', list); syncToCloud(); }
+
+function daysUntil(dateStr) {
+  var target = parseISO(dateStr).getTime();
+  var today = startOfDay(new Date()).getTime();
+  return Math.round((target - today) / (24 * 60 * 60 * 1000));
+}
+
+function renderExams() {
+  var list = loadExams();
+  list.sort(function (a, b) { return parseISO(a.date).getTime() - parseISO(b.date).getTime(); });
+  var wrap = document.getElementById('ui-exam-list');
+  if (list.length === 0) {
+    wrap.innerHTML = '<div class="empty-state"><div class="e-icon">\ud83d\udcc5</div><div class="e-text">No exams added yet.</div></div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    var ex = list[i];
+    var du = daysUntil(ex.date);
+    var countClass = 'bg-blue';
+    var countText = du + ' days';
+    if (du < 0) { countClass = 'bg-emerald'; countText = 'Past'; }
+    else if (du === 0) { countClass = 'bg-rose'; countText = 'Today'; }
+    else if (du === 1) { countClass = 'bg-amber'; countText = 'Tomorrow'; }
+    else if (du <= 7) { countClass = 'bg-amber'; countText = du + ' days'; }
+    var dObj = parseISO(ex.date);
+    var dateLine = DAY_NAMES[dObj.getDay()] + ' ' + dObj.getDate() + ' ' + MONTH_NAMES[dObj.getMonth()] + (ex.time ? (' \u00b7 ' + ex.time) : '') + (ex.room ? (' \u00b7 ' + ex.room) : '');
+    html +=
+      '<div class="exam-item">' +
+      '<div class="exam-top"><div><div class="exam-subject">' + escapeHTML(ex.subject) + '</div>' +
+      '<div class="exam-meta">' + dateLine + '</div></div>' +
+      '<div class="exam-countdown badge ' + countClass + '" style="margin-bottom:0;">' + countText + '</div></div>' +
+      '<div class="exam-actions">' +
+      '<button class="btn-ghost" onclick="openGCal(\'' + ex.id + '\')">Add to Google Cal</button>' +
+      '<button class="btn-ghost" onclick="downloadICS(\'' + ex.id + '\')">.ics file</button>' +
+      '<button class="btn-ghost" style="flex:0; color:var(--rose);" onclick="deleteExam(\'' + ex.id + '\')">Delete</button>' +
+      '</div></div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function addExam() {
+  var subject = document.getElementById('exam-subject').value.replace(/^\s+|\s+$/g, '');
+  var date = document.getElementById('exam-date').value;
+  var time = document.getElementById('exam-time').value;
+  var room = document.getElementById('exam-room').value.replace(/^\s+|\s+$/g, '');
+  if (subject === '' || date === '') { alert('Please add at least a subject and date.'); return; }
+  var list = loadExams();
+  list.push({ id: 'ex' + Date.now(), subject: subject, date: date, time: time, room: room });
+  saveExams(list);
+  document.getElementById('exam-subject').value = '';
+  document.getElementById('exam-date').value = '';
+  document.getElementById('exam-time').value = '';
+  document.getElementById('exam-room').value = '';
+  renderExams();
+}
+
+function deleteExam(id) {
+  var list = loadExams();
+  var out = [];
+  for (var i = 0; i < list.length; i++) { if (list[i].id !== id) out.push(list[i]); }
+  saveExams(out);
+  renderExams();
+}
+
+function findExam(id) {
+  var list = loadExams();
+  for (var i = 0; i < list.length; i++) { if (list[i].id === id) return list[i]; }
+  return null;
+}
+
+function examTimeRange(ex) {
+  var hh = 9, mm = 0;
+  if (ex.time) {
+    var tp = ex.time.split(':');
+    hh = parseInt(tp[0], 10); mm = parseInt(tp[1], 10);
+  }
+  var d = parseISO(ex.date);
+  var startStr = d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + 'T' + pad2(hh) + pad2(mm) + '00';
+  var endMins = hh * 60 + mm + 60;
+  var endHH = Math.floor(endMins / 60) % 24, endMM = endMins % 60;
+  var endStr = d.getFullYear() + pad2(d.getMonth() + 1) + pad2(d.getDate()) + 'T' + pad2(endHH) + pad2(endMM) + '00';
+  return { start: startStr, end: endStr };
+}
+
+function openGCal(id) {
+  var ex = findExam(id);
+  if (!ex) return;
+  var range = examTimeRange(ex);
+  var url = 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent(ex.subject + ' Exam') +
+    '&dates=' + range.start + '/' + range.end +
+    '&location=' + encodeURIComponent(ex.room || '') +
+    '&details=' + encodeURIComponent('Added from WBS Quantum Dashboard');
+  window.open(url, '_blank');
+}
+
+function escapeICS(s) {
+  return String(s).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+function downloadICS(id) {
+  var ex = findExam(id);
+  if (!ex) return;
+  var range = examTimeRange(ex);
+  var stampD = new Date();
+  var stamp = stampD.getFullYear() + pad2(stampD.getMonth() + 1) + pad2(stampD.getDate()) + 'T' + pad2(stampD.getHours()) + pad2(stampD.getMinutes()) + pad2(stampD.getSeconds()) + 'Z';
+  var lines = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//WBS Quantum Dashboard//EN',
+    'BEGIN:VEVENT',
+    'UID:' + ex.id + '@wbsquantum',
+    'DTSTAMP:' + stamp,
+    'DTSTART:' + range.start,
+    'DTEND:' + range.end,
+    'SUMMARY:' + escapeICS(ex.subject + ' Exam'),
+  ];
+  if (ex.room) lines.push('LOCATION:' + escapeICS(ex.room));
+  lines.push('END:VEVENT', 'END:VCALENDAR');
+  var content = lines.join('\r\n');
+  var blob = new Blob([content], { type: 'text/calendar' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = ex.subject.replace(/[^a-z0-9]/gi, '_') + '_exam.ics';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+}
+
+// ================= ASK AI TAB =================
+var chatHistory = SafeStore.getJSON('wbs_chat_history', []);
+var apiConfig = SafeStore.getJSON('wbs_api_config', { key: '', model: 'gemini-3.6-flash' });
+var lastAutoExamId = null;
+
+// The AI can't reach into your phone's real calendar app directly (no website can,
+// without a full Google Sign-In flow) - but it CAN fully manage the entries in your
+// Exams tab (which has Add-to-calendar buttons) and your Tasks list.
+var AI_TOOLS = [{
+  functionDeclarations: [
+    {
+      name: 'manage_calendar_event',
+      description: 'Create, update, or delete an entry in the user\'s Exams/Events list (visible on the Exams tab, with Add-to-calendar buttons). Use this whenever the user asks to add, schedule, move, rename, or remove an exam, test, deadline, or event.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', description: "One of 'create', 'update', or 'delete'." },
+          match_subject: { type: 'string', description: 'For update/delete: text to find the existing event by (matched against its subject).' },
+          subject: { type: 'string', description: 'Event title, e.g. "Chemistry Exam". Required for create.' },
+          date: { type: 'string', description: 'Date in YYYY-MM-DD format. Required for create.' },
+          time: { type: 'string', description: 'Time in 24-hour HH:MM format, optional.' },
+          room: { type: 'string', description: 'Location or room, optional.' }
+        },
+        required: ['action']
+      }
+    },
+    {
+      name: 'manage_task',
+      description: 'Create, complete/uncomplete, or delete an item on the user\'s Tasks (to-do/homework) list. Use this whenever the user asks to add, remember, tick off, finish, or remove a task or piece of homework.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: { type: 'string', description: "One of 'create', 'complete', 'uncomplete', or 'delete'." },
+          match_text: { type: 'string', description: 'For complete/uncomplete/delete: text to find the existing task by (matched against its text).' },
+          text: { type: 'string', description: 'The task text, e.g. "Maths Hegarty page 12". Required for create.' },
+          due_date: { type: 'string', description: 'Optional due date in YYYY-MM-DD format, resolved from today\'s date if the user says something relative like "by Friday".' }
+        },
+        required: ['action']
+      }
+    }
+  ]
+}];
+
+function findExamByText(text) {
+  if (!text) return null;
+  var list = loadExams();
+  var needle = text.toLowerCase();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].subject.toLowerCase().indexOf(needle) > -1) return list[i];
+  }
+  return null;
+}
+
+function findTaskByText(text) {
+  if (!text) return null;
+  var list = loadTasks();
+  var needle = text.toLowerCase();
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].text.toLowerCase().indexOf(needle) > -1) return list[i];
+  }
+  return null;
+}
+
+function execCalendarFunction(args) {
+  var action = args.action;
+  if (action === 'create') {
+    if (!args.subject || !args.date) return { status: 'error', message: 'subject and date are required to create an event.' };
+    var list = loadExams();
+    var id = 'ex' + Date.now();
+    list.push({ id: id, subject: args.subject, date: args.date, time: args.time || '', room: args.room || '' });
+    saveExams(list);
+    lastAutoExamId = id;
+    safeRun(renderExams); safeRun(renderHome);
+    return { status: 'success', id: id, subject: args.subject, date: args.date };
+  }
+  if (action === 'update') {
+    var match = findExamByText(args.match_subject || args.subject);
+    if (!match) return { status: 'error', message: 'Could not find an event matching "' + (args.match_subject || args.subject) + '".' };
+    var all = loadExams();
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].id === match.id) {
+        if (args.subject) all[i].subject = args.subject;
+        if (args.date) all[i].date = args.date;
+        if (args.time) all[i].time = args.time;
+        if (args.room) all[i].room = args.room;
+      }
+    }
+    saveExams(all);
+    lastAutoExamId = match.id;
+    safeRun(renderExams); safeRun(renderHome);
+    return { status: 'success', id: match.id, subject: match.subject };
+  }
+  if (action === 'delete') {
+    var toDelete = findExamByText(args.match_subject || args.subject);
+    if (!toDelete) return { status: 'error', message: 'Could not find an event matching "' + (args.match_subject || args.subject) + '".' };
+    var kept = [];
+    var all2 = loadExams();
+    for (var j = 0; j < all2.length; j++) { if (all2[j].id !== toDelete.id) kept.push(all2[j]); }
+    saveExams(kept);
+    lastAutoExamId = null;
+    safeRun(renderExams); safeRun(renderHome);
+    return { status: 'success', deleted: toDelete.subject };
+  }
+  return { status: 'error', message: 'Unknown action "' + action + '".' };
+}
+
+function execTaskFunction(args) {
+  var action = args.action;
+  if (action === 'create') {
+    if (!args.text) return { status: 'error', message: 'text is required to create a task.' };
+    var list = loadTasks();
+    list.unshift({ id: 't' + Date.now(), text: args.text, done: false, due: args.due_date || '' });
+    saveTasks(list);
+    safeRun(renderTasks); safeRun(renderHome);
+    return { status: 'success', text: args.text };
+  }
+  if (action === 'complete' || action === 'uncomplete') {
+    var t = findTaskByText(args.match_text || args.text);
+    if (!t) return { status: 'error', message: 'Could not find a task matching "' + (args.match_text || args.text) + '".' };
+    var all = loadTasks();
+    for (var i = 0; i < all.length; i++) { if (all[i].id === t.id) all[i].done = (action === 'complete'); }
+    saveTasks(all);
+    safeRun(renderTasks); safeRun(renderHome);
+    return { status: 'success', text: t.text, done: (action === 'complete') };
+  }
+  if (action === 'delete') {
+    var toDelete = findTaskByText(args.match_text || args.text);
+    if (!toDelete) return { status: 'error', message: 'Could not find a task matching "' + (args.match_text || args.text) + '".' };
+    var kept = [];
+    var all2 = loadTasks();
+    for (var j = 0; j < all2.length; j++) { if (all2[j].id !== toDelete.id) kept.push(all2[j]); }
+    saveTasks(kept);
+    safeRun(renderTasks); safeRun(renderHome);
+    return { status: 'success', deleted: toDelete.text };
+  }
+  return { status: 'error', message: 'Unknown action "' + action + '".' };
+}
+
+function executeFunctionCall(fc) {
+  var args = fc.args || {};
+  if (fc.name === 'manage_calendar_event') return execCalendarFunction(args);
+  if (fc.name === 'manage_task') return execTaskFunction(args);
+  return { status: 'error', message: 'Unknown function.' };
+}
+
+function escapeHTML(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderChat() {
+  var box = document.getElementById('ui-chat-box');
+  var html = '';
+  if (location.protocol === 'file:') {
+    html += '<div class="chat-msg msg-error" style="max-width:100%;">Heads up: this page is open as a local file. Some mobile browsers block API requests from local files. If chat fails, try hosting this file online (https://) instead.</div>';
+  }
+  var shown = 0;
+  for (var i = 0; i < chatHistory.length; i++) {
+    var m = chatHistory[i];
+    var part = (m.parts && m.parts[0]) ? m.parts[0] : {};
+    if (!part.text) continue; // skip internal functionCall / functionResponse turns
+    var cls = (m.role === 'user') ? 'msg-user' : (m.role === 'error' ? 'msg-error' : 'msg-ai');
+    html += '<div class="chat-msg ' + cls + '">' + escapeHTML(part.text) + '</div>';
+    shown++;
+  }
+  if (shown === 0) {
+    html += '<div class="chat-msg msg-ai">Hey! I\'m connected once you add your API key (tap the gear icon). Ask me anything about your timetable, homework, or revision \u2014 I can also add, move, or remove things on your Exams tab for you.</div>';
+  }
+  if (lastAutoExamId) {
+    var ex = findExam(lastAutoExamId);
+    if (ex) {
+      html += '<div class="exam-item" style="align-self:flex-start; max-width:90%;">' +
+        '<div class="exam-top"><div><div class="exam-subject">' + escapeHTML(ex.subject) + '</div>' +
+        '<div class="exam-meta">' + ex.date + (ex.time ? (' \u00b7 ' + ex.time) : '') + '</div></div></div>' +
+        '<div class="exam-actions">' +
+        '<button class="btn-ghost" onclick="openGCal(\'' + ex.id + '\')">Add to Google Cal</button>' +
+        '<button class="btn-ghost" onclick="downloadICS(\'' + ex.id + '\')">.ics file</button>' +
+        '</div></div>';
+    }
+  }
+  box.innerHTML = html;
+  box.scrollTop = box.scrollHeight;
+  var sub = document.getElementById('ai-sub');
+  sub.innerText = apiConfig.key ? ('Model: ' + apiConfig.model) : 'Set up your API key to start chatting.';
+}
+
+function appendTyping() {
+  var box = document.getElementById('ui-chat-box');
+  var el = document.createElement('div');
+  el.className = 'typing-dots';
+  el.id = 'ui-typing';
+  el.innerHTML = '<span></span><span></span><span></span>';
+  box.appendChild(el);
+  box.scrollTop = box.scrollHeight;
+}
+function removeTyping() {
+  var el = document.getElementById('ui-typing');
+  if (el) el.parentNode.removeChild(el);
+}
+
+function geminiRequest() {
+  var model = apiConfig.model || 'gemini-3.6-flash';
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(apiConfig.key);
+  var aiStudentName = (currentUser && PROFILE_NAMES[currentUser.uid]) ? PROFILE_NAMES[currentUser.uid] : 'student';
+  var aiTimetable = JSON.stringify({weekA: WEEK_A, weekB: WEEK_B, peBlocks: PE_BLOCKS});
+  var sysText = 'You are the AI assistant inside WBS Quantum Dashboard for ' + aiStudentName + '. You manage ' + aiStudentName + '\'s school timetable and academic schedule for the 2026-2027 academic year. Today\'s date is ' +
+    ymd(new Date()) + ' (' + DAY_NAMES_FULL[new Date().getDay()] + '). Use ONLY the exact timetable data currently loaded in the app. Never invent, substitute, or correct teachers, rooms, lesson order, Science rotations, bell times, or PE activities. Bell times: Registration/Tutor 08:30-09:00; P1 09:00-10:00; P2 10:00-11:20; P3 11:20-12:20; P4 12:20-13:55; P5 13:55-14:55. Here is the exact loaded timetable JSON: ' + aiTimetable + '. Use manage_calendar_event for exams/events and manage_task for to-dos/homework whenever asked. Resolve relative dates against today\'s date and keep answers concise and friendly.';
+  var body = JSON.stringify({
+    contents: chatHistory,
+    tools: AI_TOOLS,
+    systemInstruction: { parts: [{ text: sysText }] }
+  });
+  return fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: body })
+    .then(function (res) {
+      return res.json().then(function (data) { return { ok: res.ok, status: res.status, data: data }; });
+    });
+}
+
+function pushErrorAndRender(msg) {
+  chatHistory.push({ role: 'error', parts: [{ text: msg }] });
+  SafeStore.setJSON('wbs_chat_history', chatHistory); syncToCloud();
+  renderChat();
+}
+
+function handleModelResult(result, hopsLeft) {
+  if (!result.ok) {
+    var msg = 'Request failed (' + result.status + ').';
+    if (result.data && result.data.error && result.data.error.message) { msg += ' ' + result.data.error.message; }
+    removeTyping();
+    pushErrorAndRender(msg);
+    return;
+  }
+  var candidate = result.data && result.data.candidates && result.data.candidates[0];
+  if (!candidate || !candidate.content) {
+    removeTyping();
+    pushErrorAndRender('Sorry, I couldn\'t generate a response for that.');
+    return;
+  }
+  var parts = candidate.content.parts || [];
+  var fcPart = null;
+  for (var i = 0; i < parts.length; i++) { if (parts[i].functionCall) { fcPart = parts[i].functionCall; break; } }
+
+  if (fcPart && hopsLeft > 0) {
+    // Model wants to create/update/delete a calendar entry. Run it locally, then let the model confirm.
+    chatHistory.push(candidate.content);
+    var execResult = executeFunctionCall(fcPart);
+    chatHistory.push({ role: 'user', parts: [{ functionResponse: { name: fcPart.name, response: execResult } }] });
+    SafeStore.setJSON('wbs_chat_history', chatHistory); syncToCloud();
+    geminiRequest().then(function (nextResult) { handleModelResult(nextResult, hopsLeft - 1); }).catch(handleFetchError);
+    return;
+  }
+
+  removeTyping();
+  var textPart = null;
+  for (var j = 0; j < parts.length; j++) { if (parts[j].text) { textPart = parts[j].text; break; } }
+  chatHistory.push({ role: 'model', parts: [{ text: textPart || 'Done.' }] });
+  SafeStore.setJSON('wbs_chat_history', chatHistory); syncToCloud();
+  renderChat();
+}
+
+function handleFetchError(err) {
+  removeTyping();
+  var msg;
+  if (navigator.onLine === false) {
+    msg = 'Your device shows no internet connection right now.';
+  } else if (location.protocol === 'file:') {
+    msg = 'The request was blocked before it reached Gemini. This usually happens when the dashboard is opened as a local file (file://) \u2014 mobile browsers often block API calls from local files for security. Try hosting this file somewhere (even a simple static host) and opening it via https:// instead.';
+  } else {
+    msg = 'Could not reach Gemini (this is usually a blocked/cross-origin request, not your actual internet connection). Double-check the API key and model name in Settings.';
+  }
+  if (err && err.message) { msg += ' [' + err.message + ']'; }
+  pushErrorAndRender(msg);
+}
+
+function handleSend() {
+  var input = document.getElementById('ai-input');
+  var text = input.value.replace(/^\s+|\s+$/g, '');
+  if (text === '') return;
+  if (!apiConfig.key) { toggleSettings(true); return; }
+  input.value = '';
+  lastAutoExamId = null;
+  chatHistory.push({ role: 'user', parts: [{ text: text }] });
+  SafeStore.setJSON('wbs_chat_history', chatHistory); syncToCloud();
+  renderChat();
+  appendTyping();
+  geminiRequest().then(function (result) { handleModelResult(result, 2); }).catch(handleFetchError);
+}
+
+// ================= SETTINGS MODAL =================
+function toggleSettings(open) {
+  var modal = document.getElementById('ui-modal');
+  if (open) {
+    document.getElementById('api-key-input').value = apiConfig.key || '';
+    document.getElementById('api-model-input').value = apiConfig.model || 'gemini-3.6-flash';
+    modal.className = 'modal-overlay open';
+  } else {
+    modal.className = 'modal-overlay';
+  }
+}
+function saveConfig() {
+  var key = document.getElementById('api-key-input').value.replace(/^\s+|\s+$/g, '');
+  var model = document.getElementById('api-model-input').value.replace(/^\s+|\s+$/g, '') || 'gemini-3.6-flash';
+  apiConfig = { key: key, model: model };
+  SafeStore.setJSON('wbs_api_config', apiConfig);
+  syncToCloud();
+  toggleSettings(false);
+  renderChat();
+}
+
+// ================= TAB SWITCHING + LIQUID DOCK =================
+var DOCK_ORDER = ['view-home', 'view-schedule', 'view-tasks', 'view-exams', 'view-ai', 'view-leaderboard'];
+
+function switchView(id, el) {
+  vibrate(8);
+  var views = document.getElementsByClassName('tab-view');
+  for (var i = 0; i < views.length; i++) { views[i].className = views[i].id === id ? 'tab-view active' : 'tab-view'; }
+  var btns = document.getElementsByClassName('dock-btn');
+  for (var j = 0; j < btns.length; j++) { btns[j].className = 'dock-btn'; }
+  if (!el) { el = document.getElementById('dock-' + id.replace('view-', '')); }
+  if (el) el.className = 'dock-btn active';
+  moveLiquidTo(el, false);
+  if (id === 'view-home') safeRun(renderHome);
+  if (id === 'view-schedule') safeRun(renderSchedule);
+  if (id === 'view-tasks') safeRun(renderTasks);
+  if (id === 'view-exams') safeRun(renderExams);
+}
+
+function moveLiquidTo(el, dragging) {
+  if (!el) return;
+  var nav = document.getElementById('dock-nav');
+  var navRect = nav.getBoundingClientRect();
+  var elRect = el.getBoundingClientRect();
+  moveLiquidToRect(elRect.left - navRect.left, elRect.width, dragging);
+}
+
+function moveLiquidToRect(left, width, dragging) {
+  var liquid = document.getElementById('dock-liquid');
+  liquid.style.width = width + 'px';
+  liquid.style.transform = 'translateX(' + left + 'px)';
+  liquid.className = dragging ? 'dock-liquid dragging' : 'dock-liquid';
+}
+
+// Hold-and-slide gesture: press anywhere on the dock, drag across icons,
+// the liquid glass pill follows your finger. Positions are measured ONCE at
+// the start of the gesture (not per-frame) to avoid forcing layout on every
+// touchmove, and the actual view only switches once, on release - not
+// mid-drag - so dragging across icons doesn't trigger repeated full re-renders.
+(function setupDockGesture() {
+  var dragging = false, navLeft = 0, rects = [], previewBtn = null, startBtn = null;
+
+  function cacheRects() {
+    var nav = document.getElementById('dock-nav');
+    var btns = document.getElementsByClassName('dock-btn');
+    var navRect = nav.getBoundingClientRect();
+    navLeft = navRect.left;
+    rects = [];
+    for (var i = 0; i < btns.length; i++) {
+      var r = btns[i].getBoundingClientRect();
+      rects.push({ el: btns[i], left: r.left - navLeft, width: r.width, right: r.right - navLeft });
+    }
+  }
+
+  function findButtonAt(xRel) {
+    for (var i = 0; i < rects.length; i++) {
+      if (xRel >= rects[i].left && xRel <= rects[i].right) return rects[i];
+    }
+    return null;
+  }
+
+  function pointFromEvent(e) {
+    if (e.touches && e.touches.length > 0) return e.touches[0].clientX;
+    return e.clientX;
+  }
+
+  function onStart(e) {
+    cacheRects();
+    dragging = true;
+    startBtn = document.querySelector('.dock-btn.active');
+    previewBtn = startBtn;
+    onMove(e);
+  }
+  function onMove(e) {
+    if (!dragging) return;
+    var xRel = pointFromEvent(e) - navLeft;
+    var match = findButtonAt(xRel);
+    if (match) {
+      moveLiquidToRect(match.left, match.width, true);
+      previewBtn = match.el;
+    }
+  }
+  function onEnd() {
+    if (!dragging) return;
+    dragging = false;
+    if (previewBtn && previewBtn !== startBtn) {
+      var id = 'view-' + previewBtn.id.replace('dock-', '');
+      switchView(id, previewBtn);
+    } else if (previewBtn) {
+      moveLiquidTo(previewBtn, false);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    var dockNav = document.getElementById('dock-nav');
+    dockNav.addEventListener('touchstart', onStart, { passive: true });
+    dockNav.addEventListener('touchmove', onMove, { passive: true });
+    dockNav.addEventListener('touchend', onEnd, { passive: true });
+    dockNav.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
+    window.addEventListener('resize', function () {
+      var activeBtn = document.querySelector('.dock-btn.active');
+      moveLiquidTo(activeBtn, false);
+    });
+  });
+})();
+
+// ================= CLOCK =================
+function tickClock() {
+  var now = new Date();
+  var hms = pad2(now.getHours()) + ':' + pad2(now.getMinutes()) + ':' + pad2(now.getSeconds());
+  document.getElementById('ui-time').innerText = hms;
+  var heroEl = document.getElementById('hero-time');
+  if (heroEl) heroEl.innerText = pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  if (now.getSeconds() === 0) { renderSchedule(); renderHome(); }
+}
+
+// ================= BOOT =================
+function safeRun(fn) {
+  try { fn(); } catch (e) { if (window.console && console.error) console.error('WBS Quantum error:', e); }
+}
+
+function registerServiceWorker() {
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* PWA install just won't be available - app still works fine */ });
+  }
+}
+
+// ================= NOTIFICATIONS =================
+// Real browser notifications, fired when the app is open (or freshly opened).
+// True background push (notifications while the app is fully closed) needs a
+// server component - see the chat reply for what that would take.
+function updateNotifBtn() {
+  var btn = document.getElementById('notif-btn');
+  if (!btn) return;
+  if (!('Notification' in window)) { btn.innerText = 'Not supported on this browser'; btn.disabled = true; return; }
+  if (Notification.permission === 'granted') { btn.innerText = 'Notifications On \u2713'; }
+  else if (Notification.permission === 'denied') { btn.innerText = 'Blocked \u2014 enable in browser settings'; }
+  else { btn.innerText = 'Enable Notifications'; }
+}
+
+function handleEnableNotifications() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(function () {
+    updateNotifBtn();
+    if (Notification.permission === 'granted') { fireNotification('WBS Quantum', 'Reminders are on. I\u2019ll nudge you about PE kit, tasks, and exams when you open the app.'); }
+  });
+}
+
+function fireNotification(title, body) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+      navigator.serviceWorker.ready.then(function (reg) {
+        reg.showNotification(title, { body: body, icon: 'icon-192.png', badge: 'icon-192.png' });
+      }).catch(function () { new Notification(title, { body: body, icon: 'icon-192.png' }); });
+    } else {
+      new Notification(title, { body: body, icon: 'icon-192.png' });
+    }
+  } catch (e) {}
+}
+
+function runDailyReminders() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  var todayKey = ymd(new Date());
+  var lastRun = SafeStore.get('wbs_last_notify_date', '');
+  if (lastRun === todayKey) return; // already reminded once today
+  SafeStore.set('wbs_last_notify_date', todayKey);
+
+  var now = new Date();
+  var dow = now.getDay();
+  var messages = [];
+
+  if (!getHolidayInfo(now) && dow >= 1 && dow <= 5) {
+    var peBlock = getPEBlock(now);
+    var peDays = (getWeekType(now) === 'A') ? WEEK_A_PE_DAYS : WEEK_B_PE_DAYS;
+    if (peBlock && (dow === peDays[0] || dow === peDays[1])) {
+      var sport = (dow === peDays[0]) ? peBlock.a : peBlock.b;
+      messages.push('PE today: ' + sport + '. Pack: ' + getKitForSport(sport));
+    }
+  }
+
+  var tasks = loadTasks();
+  var dueCount = 0;
+  for (var i = 0; i < tasks.length; i++) {
+    if (!tasks[i].done && tasks[i].due) {
+      var d = daysUntil(tasks[i].due);
+      if (d <= 0) dueCount++;
+    }
+  }
+  if (dueCount > 0) messages.push(dueCount + ' task' + (dueCount > 1 ? 's' : '') + ' due today or overdue.');
+
+  var exams = loadExams();
+  for (var j = 0; j < exams.length; j++) {
+    var ed = daysUntil(exams[j].date);
+    if (ed >= 0 && ed <= 2) {
+      var when = (ed === 0) ? 'today' : (ed === 1 ? 'tomorrow' : ('in ' + ed + ' days'));
+      messages.push(exams[j].subject + ' exam ' + when + '.');
+    }
+  }
+
+  if (messages.length > 0) {
+    fireNotification('WBS Quantum', messages.join(' \u00b7 '));
+  }
+}
+
+// ================= VIBRATION =================
+// Android Chrome only - iOS Safari doesn't allow websites to trigger haptics at all,
+// so this silently no-ops there rather than erroring.
+function vibrate(pattern) {
+  try { if (navigator.vibrate) navigator.vibrate(pattern); } catch (e) {}
+}
+
+// ================= WEATHER (West Bridgford) =================
+// Open-Meteo - free, no API key needed.
+var WEATHER_LOCATION = 'West Bridgford, Nottingham';
+// West Bridgford centre area. Weather is deliberately pinned here instead of using
+// the browser's approximate location, so the dashboard is consistent for school.
+var WEATHER_LAT = 52.9295, WEATHER_LON = -1.1257;
+var WEATHER_CACHE_KEY = 'wbs_weather_west_bridgford_v2';
+
+function weatherCodeText(code) {
+  var map = {
+    0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+    45:'Fog',48:'Depositing rime fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+    56:'Light freezing drizzle',57:'Freezing drizzle',61:'Light rain',63:'Rain',65:'Heavy rain',
+    66:'Light freezing rain',67:'Freezing rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+    77:'Snow grains',80:'Light showers',81:'Showers',82:'Heavy showers',
+    85:'Light snow showers',86:'Heavy snow showers',95:'Thunderstorm',96:'Thunderstorm + hail',99:'Thunderstorm + heavy hail'
+  };
+  return map[code] || 'Mixed conditions';
+}
+
+function weatherCodeIcon(code, isDay) {
+  if (code === 0) return isDay ? '☀️' : '🌙';
+  if (code === 1) return isDay ? '🌤️' : '🌙';
+  if (code === 2) return '⛅';
+  if (code === 3) return '☁️';
+  if (code === 45 || code === 48) return '🌫️';
+  if (code >= 51 && code <= 57) return '🌦️';
+  if (code >= 61 && code <= 67) return '🌧️';
+  if (code >= 71 && code <= 77) return '🌨️';
+  if (code >= 80 && code <= 82) return '🌦️';
+  if (code >= 85 && code <= 86) return '🌨️';
+  if (code >= 95) return '⛈️';
+  return '🌦️';
+}
+
+function weatherWindDir(deg) {
+  if (deg === undefined || deg === null || isNaN(deg)) return '';
+  var dirs = ['N','NE','E','SE','S','SW','W','NW'];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function renderWeatherCard() {
+  var home = document.getElementById('view-home');
+  if (!home) return;
+  var old = document.getElementById('west-bridgford-weather');
+  if (old) old.remove();
+  var w = getWeather();
+  if (!w) return;
+  var card = document.createElement('div');
+  card.id = 'west-bridgford-weather';
+  card.className = 'glass-card weather-local-card';
+  var hourly = w.hourly || [];
+  var next = hourly.slice(0, 6).map(function(h) {
+    return '<div class="weather-hour"><b>' + h.time + '</b><span>' + weatherCodeIcon(h.code, h.isDay) + '</span><span>' + Math.round(h.temp) + '°</span><small>' + Math.round(h.rainChance || 0) + '% rain</small></div>';
+  }).join('');
+  var daily = w.daily || [];
+  var days = daily.slice(0, 5).map(function(d) {
+    var day = new Date(d.date + 'T12:00:00').toLocaleDateString('en-GB', {weekday:'short'});
+    return '<div class="weather-day"><b>' + day + '</b><span>' + weatherCodeIcon(d.code, true) + '</span><span>' + Math.round(d.max) + '° / ' + Math.round(d.min) + '°</span><small>' + Math.round(d.rainChance || 0) + '%</small></div>';
+  }).join('');
+  card.innerHTML = '<div class="weather-local-head"><div><div class="q-label">Weather</div><div class="weather-local-title">' + WEATHER_LOCATION + '</div><div class="weather-local-sub">' + weatherCodeText(w.code) + ' · Updated ' + (w.updated || 'recently') + '</div></div><div class="weather-local-temp">' + Math.round(w.temp) + '°</div></div>' +
+    '<div class="weather-local-meta"><span>Feels ' + Math.round(w.feels) + '°</span><span>🌧️ ' + Math.round(w.rainChance || 0) + '%</span><span>💨 ' + Math.round(w.wind || 0) + ' km/h ' + weatherWindDir(w.windDir) + '</span><span>💨 Gusts ' + Math.round(w.gusts || 0) + ' km/h</span></div>' +
+    '<div class="weather-section-title">Next few hours</div><div class="weather-hours">' + next + '</div>' +
+    '<div class="weather-section-title">5-day outlook</div><div class="weather-days">' + days + '</div>' +
+    '<div class="weather-source">Source: Open-Meteo · UK Met Office UKV 2 km model where available</div>';
+  var grid = document.getElementById('ui-quick-grid');
+  if (grid) home.insertBefore(card, grid);
+}
+
+function saveWeatherData(data, modelLabel) {
+  if (!data || !data.current) return;
+  var cur = data.current;
+  var h = data.hourly || {};
+  var d = data.daily || {};
+  var times = h.time || [];
+  var nowIso = cur.time || new Date().toISOString();
+  var nowMs = Date.parse(nowIso);
+  var hourly = [];
+  for (var i=0; i<times.length && hourly.length<6; i++) {
+    var ms = Date.parse(times[i]);
+    if (isNaN(ms) || ms < nowMs - 30*60*1000) continue;
+    hourly.push({
+      time: new Date(ms).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+      temp: Number(h.temperature_2m && h.temperature_2m[i] || 0),
+      rainChance: Number(h.precipitation_probability && h.precipitation_probability[i] || 0),
+      code: Number(h.weather_code && h.weather_code[i] || 0),
+      isDay: Number(h.is_day && h.is_day[i] || 1) === 1
+    });
+  }
+  var daily = [];
+  for (var j=0; j<(d.time||[]).length; j++) {
+    daily.push({date:d.time[j], max:Number(d.temperature_2m_max && d.temperature_2m_max[j] || 0), min:Number(d.temperature_2m_min && d.temperature_2m_min[j] || 0), rainChance:Number(d.precipitation_probability_max && d.precipitation_probability_max[j] || 0), code:Number(d.weather_code && d.weather_code[j] || 0)});
+  }
+  var temp = Number(cur.temperature_2m);
+  var precip = Number(cur.precipitation || 0);
+  var code = Number(cur.weather_code || 0);
+  var record = {
+    location: WEATHER_LOCATION, date: ymd(new Date()), fetchedAt: new Date().toISOString(),
+    updated: new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+    model: modelLabel || 'Open-Meteo', tempC: temp, temp: temp, feels: Number(cur.apparent_temperature || temp),
+    code: code, cloudCover: Number(cur.cloud_cover || 0), precip: precip,
+    rainChance: Number(h.precipitation_probability && h.precipitation_probability[0] || 0),
+    wind: Number(cur.wind_speed_10m || 0), windDir: Number(cur.wind_direction_10m || 0), gusts: Number(cur.wind_gusts_10m || 0),
+    uv: Number(cur.uv_index || 0), bright: code <= 2, cold: temp < 10, wet: precip > 0 || code >= 51,
+    hourly: hourly, daily: daily
+  };
+  SafeStore.setJSON(WEATHER_CACHE_KEY, record);
+  SafeStore.setJSON('wbs_weather', record);
+  renderWeatherCard();
+  safeRun(renderHome); safeRun(renderSchedule);
+}
+
+function fetchWeatherModel(model) {
+  var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + WEATHER_LAT + '&longitude=' + WEATHER_LON +
+    '&models=' + encodeURIComponent(model) +
+    '&current=temperature_2m,apparent_temperature,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index,is_day' +
+    '&hourly=temperature_2m,precipitation_probability,weather_code,is_day' +
+    '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset' +
+    '&forecast_days=7&timezone=Europe%2FLondon';
+  return fetch(url).then(function(res){ if(!res.ok) throw new Error('Weather HTTP '+res.status); return res.json(); });
+}
+
+function fetchWeatherIfNeeded(force) {
+  var cached = SafeStore.getJSON(WEATHER_CACHE_KEY, null) || SafeStore.getJSON('wbs_weather', null);
+  if (cached && cached.location === WEATHER_LOCATION && !force) {
+    var age = Date.now() - Date.parse(cached.fetchedAt || 0);
+    if (age < 30 * 60 * 1000) { renderWeatherCard(); return; }
+  }
+  // UKV is the high-resolution Met Office model for the UK. Open-Meteo notes it is
+  // hourly and around 2 km resolution; fall back to Best Match if unavailable.
+  fetchWeatherModel('ukmo_uk_deterministic_2km')
+    .then(function(data){ saveWeatherData(data, 'UK Met Office UKV 2 km'); })
+    .catch(function(){ return fetchWeatherModel('best_match').then(function(data){ saveWeatherData(data, 'Open-Meteo Best Match'); }); })
+    .catch(function(){ if(cached){ SafeStore.setJSON('wbs_weather', cached); renderWeatherCard(); } });
+}
+
+function getWeather() {
+  return SafeStore.getJSON(WEATHER_CACHE_KEY, null) || SafeStore.getJSON('wbs_weather', null);
+}
+
+function weatherPhrase() {
+  var w = getWeather();
+  if (!w) return '';
+  if (w.wet) return w.rainChance >= 50 ? 'rain is likely' : 'there may be some rain';
+  if (w.code === 0 || w.code === 1) return 'it’s looking bright';
+  if (w.code === 2) return 'it’s partly cloudy';
+  if (w.code === 3) return 'it’s cloudy';
+  return weatherCodeText(w.code).toLowerCase();
+}
+
+function weatherIcon() {
+  var w = getWeather();
+  return w ? weatherCodeIcon(w.code, true) : '';
+}
+
+// ================= DEV PANEL =================
+var DEV_EMAIL = 'dev@wbsquantum.app';
+var MAINTENANCE_REF = null;
+var maintenanceEnabled = false;
+var maintenanceError = '';
+var maintenanceListening = false;
+function isDeveloper(){return !!(currentUser&&currentUser.email&&currentUser.email.trim().toLowerCase()===DEV_EMAIL);}
+function handleDevUnlockPrompt(){if(!isDeveloper()){window.alert('Sign in with the developer account ('+DEV_EMAIL+') to open the developer panel.');return;}toggleSettings(false);toggleDevModal(true);loadMaintenanceState();renderDevMaintenanceControls();}
+function renderMaintenanceState(){var overlay=document.getElementById('maintenance-overlay'),devNote=document.getElementById('maintenance-dev');if(!overlay)return;var bypass=isDeveloper();overlay.className=(maintenanceEnabled&&!bypass)?'open':'';if(devNote){devNote.style.display=(maintenanceEnabled&&bypass)?'block':'none';}}
+function loadMaintenanceState(){if(!fbDb)return;if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');if(maintenanceListening)return;maintenanceListening=true;MAINTENANCE_REF.onSnapshot(function(doc){maintenanceEnabled=!!(doc.exists&&doc.data()&&doc.data().enabled);maintenanceError='';renderMaintenanceState();renderDevMaintenanceControls();},function(err){maintenanceError=(err&&err.message)?err.message:'Unable to read maintenance status.';renderMaintenanceState();renderDevMaintenanceControls();if(isDeveloper()&&window.console&&console.error)console.error('Maintenance read failed',err);});}
+function setMaintenanceMode(enabled){if(!isDeveloper()){alert('Developer account required.');return;}if(!fbDb){alert('Firebase is not ready yet.');return;}if(!MAINTENANCE_REF)MAINTENANCE_REF=fbDb.collection('appConfig').doc('maintenance');MAINTENANCE_REF.set({enabled:!!enabled,updatedAt:new Date().toISOString(),updatedBy:currentUser.email},{merge:true}).then(function(){maintenanceEnabled=!!enabled;maintenanceError='';renderMaintenanceState();renderDevMaintenanceControls();}).catch(function(err){maintenanceError=(err&&err.message)?err.message:'Permission denied.';renderDevMaintenanceControls();alert('Maintenance update failed. Deploy the included firestore.rules.txt and make sure '+DEV_EMAIL+' is the signed-in Firebase developer account.');if(window.console&&console.error)console.error('Maintenance write failed',err);});}
+function renderDevMaintenanceControls(){var box=document.getElementById('dev-maintenance-controls');if(!box||!isDeveloper())return;box.innerHTML='<div style="margin-top:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>Maintenance mode</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">ON = students see the maintenance screen. The developer account bypasses it.</div><div style="display:flex;gap:8px"><button onclick="setMaintenanceMode(true)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn on</button><button onclick="setMaintenanceMode(false)" style="flex:1;padding:10px;border:0;border-radius:10px;font-weight:800">Turn off</button></div><div style="margin-top:9px;font-size:12px;color:'+(maintenanceEnabled?'#fbbf24':'#86efac')+'">Status: '+(maintenanceEnabled?'ON':'OFF')+'</div>'+(maintenanceError?'<div style="margin-top:8px;font-size:11px;color:#fda4af">'+escapeHTML(maintenanceError)+'</div>':'')+'</div>';}
+function injectDevMaintenanceControls(){if(!isDeveloper()||document.getElementById('dev-maintenance-controls'))return;var p=document.querySelector('#ui-dev-modal .modal-box');if(!p)return;var box=document.createElement('div');box.id='dev-maintenance-controls';p.appendChild(box);renderDevMaintenanceControls();}
+function toggleDevModal(show){document.getElementById('ui-dev-modal').className=show?'modal-overlay open':'modal-overlay';if(show){document.getElementById('dev-hw-title').value='';document.getElementById('dev-hw-subject').value='';document.getElementById('dev-hw-due').value='';document.getElementById('dev-hw-instructions').value='';setTimeout(injectDevMaintenanceControls,50);setTimeout(renderDevMaintenanceControls,100);}}
+function devAddHomework(){var title=document.getElementById('dev-hw-title').value.replace(/^\s+|\s+$/g,''),subject=document.getElementById('dev-hw-subject').value.replace(/^\s+|\s+$/g,''),due=document.getElementById('dev-hw-due').value,instructions=document.getElementById('dev-hw-instructions').value.replace(/^\s+|\s+$/g,'');if(!title){window.alert('Give it a title first.');return;}var list=loadTasks();list.unshift({id:'hw'+Date.now(),text:title,done:false,due:due||'',subject:subject||'',instructions:instructions||'',source:'dev'});saveTasks(list);toggleDevModal(false);safeRun(renderTasks);safeRun(renderHome);vibrate(20);}
+// ================= CONFETTI =================
+function fireConfetti() {
+  var colors = ['#8b5cf6', '#0ea5e9', '#f472b6', '#facc15', '#34d399'];
+  for (var i = 0; i < 26; i++) {
+    var piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    var size = 6 + Math.random() * 6;
+    piece.style.width = size + 'px';
+    piece.style.height = (size * 0.4) + 'px';
+    piece.style.left = (Math.random() * 100) + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDuration = (1.6 + Math.random() * 1.2) + 's';
+    piece.style.animationDelay = (Math.random() * 0.3) + 's';
+    document.body.appendChild(piece);
+    (function (el) { setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 3200); })(piece);
+  }
+}
+
+function checkAllTasksDoneToday() {
+  var list = loadTasks();
+  var relevant = [];
+  for (var i = 0; i < list.length; i++) {
+    var t = list[i];
+    if (!t.due) continue;
+    var d = daysUntil(t.due);
+    if (d <= 0) relevant.push(t);
+  }
+  if (relevant.length === 0) return;
+  var allDone = true;
+  for (var j = 0; j < relevant.length; j++) { if (!relevant[j].done) { allDone = false; break; } }
+  if (!allDone) return;
+  var todayKey = ymd(new Date());
+  var lastCelebrated = SafeStore.get('wbs_last_celebrate', '');
+  if (lastCelebrated === todayKey) return;
+  SafeStore.set('wbs_last_celebrate', todayKey);
+  fireConfetti();
+  vibrate([15, 40, 15, 40, 30]);
+}
+
+function boot() {
+  safeRun(registerServiceWorker);
+  safeRun(renderCalendarStrip);
+  safeRun(renderHome);
+  safeRun(renderSchedule);
+  safeRun(renderTasks);
+  safeRun(renderExams);
+  safeRun(renderChat);
+  safeRun(updateNotifBtn);
+  safeRun(runDailyReminders);
+  safeRun(fetchWeatherIfNeeded);
+  safeRun(function () { moveLiquidTo(document.getElementById('dock-home'), false); });
+
+  document.getElementById('task-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') addTask(); });
+  document.getElementById('ai-input').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleSend(); });
+
+  tickClock();
+  clockTimer = setInterval(function () { safeRun(tickClock); }, 1000);
+  setInterval(function () { safeRun(renderSchedule); safeRun(renderHome); }, 30000);
+}
+
+function initApp() {
+  document.getElementById('login-email').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleLogin(); });
+  document.getElementById('login-password').addEventListener('keypress', function (e) { if (e.key === 'Enter') handleLogin(); });
+  safeRun(initFirebase);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
+</script>
+<script id="wbs-quantum-gamification-fixes">
+var STREAK_KNOWN_USERS = [
+  {uid:'lMJrosbRgtVXmuRz7gZUxAlBMn53',name:'Vivan'},
+  {uid:'o2Nv7qVfIoY5olElothK3YQnbGB2',name:'Shriyan'},
+  {uid:'Nx8kPsp1NKhdJSio2PpRYDIvit22',name:'Ryan'},
+  {uid:'YAF3QAxWhJRzFDvqDSBSp1xUHxH3',name:'Freddie'}
+];
+function streakKey(uid){return 'wbsQuantumDayStreak_'+(uid||'guest')}
+function getDayStreak(uid){uid=uid||(typeof currentUser!=='undefined'&&currentUser?currentUser.uid:'guest');var r=SafeStore.get(streakKey(uid),'');var d=r?JSON.parse(r):{count:0,lastClaim:null};return d&&typeof d.count==='number'?d:{count:0,lastClaim:null}}
+function setDayStreak(uid,d){SafeStore.set(streakKey(uid),JSON.stringify(d));}
+function renderDayStreak(){var e=document.getElementById('day-streak-card');if(!e)return;var d=getDayStreak(),claimed=d.lastClaim===ymd(new Date());e.innerHTML='<div class="day-streak-row"><div><div class="day-streak-title">Day streak</div><div class="day-streak-sub">'+(claimed?'Today claimed — keep it going tomorrow!':'Check in today to keep your streak alive.')+'</div></div><div class="day-streak-fire">🔥</div><div class="day-streak-count">'+d.count+'</div></div><button class="day-streak-btn" '+(claimed?'disabled':'')+'>'+(claimed?'Today complete ✓':'Claim today')+'</button>';var b=e.querySelector('button');if(b&&!claimed)b.onclick=claimTodayStreak;}
+function injectDayStreak(){if(document.getElementById('day-streak-card'))return renderDayStreak();var h=document.getElementById('view-home');if(!h)return;var c=document.createElement('div');c.id='day-streak-card';c.className='day-streak-card';h.insertBefore(c,h.firstChild);renderDayStreak();}
+function syncCurrentStreakToCloud(){if(!currentUser||!fbDb)return;var d=getDayStreak(currentUser.uid);return fbDb.collection('streaks').doc(currentUser.uid).set({name:PROFILE_NAMES[currentUser.uid]||currentUser.displayName||'Student',count:Number(d.count)||0,lastClaim:d.lastClaim||null,updatedAt:new Date().toISOString()},{merge:true}).catch(function(){return null;});}
+function claimTodayStreak(){if(!currentUser)return;var uid=currentUser.uid,today=ymd(new Date()),d=getDayStreak(uid);if(d.lastClaim===today){renderDayStreak();return;}if(d.lastClaim){var diff=Math.round((parseISO(today)-parseISO(d.lastClaim))/86400000);d.count=(diff===1)?(d.count+1):1}else d.count=1;d.lastClaim=today;setDayStreak(uid,d);renderDayStreak();syncCurrentStreakToCloud();renderLeaderboard();if(typeof vibrate==='function')vibrate(12);if(typeof fireConfetti==='function' && d.count>1)fireConfetti();}
+function leaderboardNames(){var map={};for(var i=0;i<STREAK_KNOWN_USERS.length;i++)map[STREAK_KNOWN_USERS[i].uid]={uid:STREAK_KNOWN_USERS[i].uid,name:STREAK_KNOWN_USERS[i].name,count:0,lastClaim:null};return map;}
+function renderLeaderboard(rows){var zone=document.getElementById('ui-leaderboard');if(!zone)return;var map=leaderboardNames();if(rows&&rows.length){for(var i=0;i<rows.length;i++){var r=rows[i];if(!map[r.uid])map[r.uid]={uid:r.uid,name:r.name||'Student',count:Number(r.count)||0,lastClaim:r.lastClaim||null};else{map[r.uid].count=Math.max(map[r.uid].count,Number(r.count)||0);map[r.uid].lastClaim=r.lastClaim||map[r.uid].lastClaim;}}}
+var arr=Object.keys(map).map(function(k){return map[k]});arr.sort(function(a,b){return b.count-a.count || a.name.localeCompare(b.name)});var me=currentUser?currentUser.uid:'';var html='';for(var j=0;j<arr.length;j++){var x=arr[j];var rank=j+1;var label=rank===1?'🥇':rank===2?'🥈':rank===3?'🥉':('#'+rank);var mine=x.uid===me;html+='<div class="leaderboard-card '+(mine?'leaderboard-me':'')+'"><div class="leaderboard-row"><div class="leaderboard-rank">'+label+'</div><div><div class="leaderboard-name">'+escapeHTML(x.name)+(mine?' <span class="badge bg-emerald">You</span>':'')+'</div><div class="leaderboard-meta">'+(x.lastClaim?'Last claimed '+x.lastClaim:'No streak claimed yet')+'</div></div><div class="leaderboard-score">🔥 '+x.count+'</div></div></div>';}zone.innerHTML=html||'<div class="glass-card">No streak data yet.</div>';}
+var leaderboardUnsub=null;
+function loadLeaderboard(){if(!fbDb){return;}if(leaderboardUnsub)try{leaderboardUnsub();}catch(e){}leaderboardUnsub=fbDb.collection('streaks').onSnapshot(function(snap){var rows=[];snap.forEach(function(doc){var d=doc.data()||{};rows.push({uid:doc.id,name:d.name||'Student',count:Number(d.count)||0,lastClaim:d.lastClaim||null});});renderLeaderboard(rows);},function(){renderLeaderboard([]);});}
+document.addEventListener('DOMContentLoaded',function(){setTimeout(injectDayStreak,300);setTimeout(loadLeaderboard,600);setInterval(renderDayStreak,60000);setInterval(function(){if(currentUser)syncCurrentStreakToCloud();},120000);});
+
+var DEV_HOMEWORK_USERS=[
+  {uid:'lMJrosbRgtVXmuRz7gZUxAlBMn53',name:'Vivan',email:'Vivan@wbsquantum.app'},
+  {uid:'o2Nv7qVfIoY5olElothK3YQnbGB2',name:'Shriyan',email:'Shriyan@wbsquantum.app'},
+  {uid:'Nx8kPsp1NKhdJSio2PpRYDIvit22',name:'Ryan',email:'Ryan@wbsquantum.app'},
+  {uid:'YAF3QAxWhJRzFDvqDSBSp1xUHxH3',name:'Freddie',email:'Freddie@wbsquantum.app'}
+];
+function renderDevHomeworkRecipients(){var p=document.querySelector('#ui-dev-modal .modal-box');if(!p||document.getElementById('dev-homework-recipients'))return;var h=document.createElement('div');h.id='dev-homework-recipients';h.innerHTML='<div style="margin-top:16px;padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:16px"><b>Homework recipients</b><div style="color:#9497ad;font-size:12px;margin:6px 0 10px">Choose one or more students.</div><div>'+DEV_HOMEWORK_USERS.map(function(u){return '<label style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px;border-radius:10px;background:rgba(255,255,255,.04);margin:6px 0"><span><b>'+escapeHTML(u.name)+'</b><br><small>'+escapeHTML(u.email)+'</small></span><input type="checkbox" class="dev-user-check" value="'+u.uid+'"></label>'}).join('')+'</div><button onclick="sendSelectedHomework()" style="width:100%;margin-top:8px;padding:10px;border:0;border-radius:10px;font-weight:800">Send to selected</button></div>';p.appendChild(h);}
+async function sendSelectedHomework(){if(!isDeveloper())return alert('Developer account required.');if(!fbDb)return alert('Firebase is not ready yet.');var cs=document.querySelectorAll('.dev-user-check:checked'),title=(document.getElementById('dev-hw-title').value||'').trim(),subject=(document.getElementById('dev-hw-subject').value||'').trim(),due=document.getElementById('dev-hw-due').value||'',instructions=(document.getElementById('dev-hw-instructions').value||'').trim();if(!cs.length)return alert('Select at least one student.');if(!title)return alert('Give the homework a title first.');var sent=0;for(var i=0;i<cs.length;i++){var uid=cs[i].value;try{var ref=fbDb.collection('users').doc(uid),snap=await ref.get(),data=snap.exists?snap.data():{},tasks=Array.isArray(data.tasks)?data.tasks:[];tasks.unshift({id:'hw'+Date.now()+'_'+i,text:title,done:false,due:due,subject:subject,instructions:instructions,source:'developer',assignedAt:new Date().toISOString()});await ref.set({tasks:tasks},{merge:true});sent++;}catch(e){if(window.console&&console.error)console.error(e);}}alert('Homework sent to '+sent+' student(s).');}
+document.addEventListener('DOMContentLoaded',function(){setTimeout(renderDevHomeworkRecipients,700);setInterval(renderDevHomeworkRecipients,2500);});
+</script></body>
+</html>

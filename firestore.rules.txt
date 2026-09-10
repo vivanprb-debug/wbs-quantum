@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Students can manage only their own private data. The authenticated developer
+    // account can distribute homework to selected student documents.
+    match /users/{userId} {
+      allow read, write: if request.auth != null && (
+        request.auth.uid == userId ||
+        request.auth.token.email == 'dev@wbsquantum.app'
+      );
+    }
+
+    // App-wide maintenance flag. Everyone signed in can read it; only the
+    // Firebase-authenticated developer account can change it.
+    match /appConfig/maintenance {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null
+        && request.auth.token.email == 'dev@wbsquantum.app';
+    }
+
+    // Shared day-streak leaderboard. Students can update only their own score;
+    // signed-in users can read the public leaderboard.
+    match /streaks/{userId} {
+      allow read: if request.auth != null;
+      allow create, update, delete: if request.auth != null
+        && request.auth.uid == userId;
+    }
+  }
+}
