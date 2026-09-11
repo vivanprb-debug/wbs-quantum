@@ -94,6 +94,9 @@ The Settings area now supports account-scoped profile personalisation: display n
 
 ## GitHub-ready layout
 This release intentionally keeps the frontend flat so it is easy to upload through GitHub's web interface.
+
+## GitHub Pages startup fix
+Firebase SDK scripts are loaded before the ES module bootstrap, the service-worker cache is bumped to v2, and root icon paths are used so the GitHub Pages build does not remain on “Starting secure sign-in…” because of SDK startup ordering or stale cached assets.
 Most frontend files are in the repository root. The only required subfolder is `functions/`, which Firebase uses for the server-side Ask AI function.
 For GitHub Pages, publish the repository root; the `functions/` folder is ignored by GitHub Pages and is deployed separately with Firebase.
 

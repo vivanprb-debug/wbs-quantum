@@ -89,37 +89,39 @@ function wireUi() {
 }
 
 async function boot() {
-  wireUi();
-  navigation = createNavigation({ defaultView: 'home' });
-  mountAI();
-  // Maintenance is informational for students; the developer console controls the cloud flag.
-  getMaintenance().then(({ data }) => {
-    if (data.enabled) {
-      const status = document.getElementById('firebase-status');
-      if (status) status.textContent = data.message;
-    }
-  }).catch(() => {});
-  registerPWA({ onOfflineChange: online => {
-    const status = document.getElementById('firebase-status');
-    if (status) status.textContent = online ? status.textContent.replace(/^Offline • /, '') : `Offline • ${status.textContent}`;
-  }}).catch(error => console.warn('[WBS Quantum] PWA setup failed', error));
-
-  patchState({ phase: 'booting', firebase: 'loading' });
-  showBootStatus('Loading Firebase securely…');
-
-  const release = validateReleaseShell();
-  if (!release.ok) console.error('[WBS Quantum] Release shell integrity failure', release);
-
-  const integrity = validateAllAcademicProfiles();
-  if (!integrity.ok) console.error('[WBS Quantum] Academic profile integrity failure', integrity.failures);
-
   try {
+    // Update the boot UI immediately so a startup exception cannot leave the static HTML message forever.
+    patchState({ phase: 'booting', firebase: 'loading' });
+    showBootStatus('Loading Firebase securely…');
+
+    wireUi();
+    navigation = createNavigation({ defaultView: 'home' });
+    mountAI();
+    registerPWA({ onOfflineChange: online => {
+      const status = document.getElementById('firebase-status');
+      if (status) status.textContent = online ? status.textContent.replace(/^Offline • /, '') : `Offline • ${status.textContent}`;
+    }}).catch(error => console.warn('[WBS Quantum] PWA setup failed', error));
+
+    const release = validateReleaseShell();
+    if (!release.ok) console.error('[WBS Quantum] Release shell integrity failure', release);
+
+    const integrity = validateAllAcademicProfiles();
+    if (!integrity.ok) console.error('[WBS Quantum] Academic profile integrity failure', integrity.failures);
+
     await initializeFirebase();
     patchState({ firebase: 'ready', phase: 'authenticating' });
     showBootStatus('Firebase ready • checking account…');
+
     configureSessionLifecycle({ navigationController: navigation });
 
-    // Cloud health never blocks auth or session creation.
+    // Cloud configuration is informational and never blocks authentication.
+    getMaintenance().then(({ data }) => {
+      if (data.enabled) {
+        const status = document.getElementById('firebase-status');
+        if (status) status.textContent = data.message;
+      }
+    }).catch(() => {});
+
     cloudHealthCheck().then(cloud => {
       patchState({ cloud });
       const cloudStatus = document.getElementById('cloud-status');
@@ -128,10 +130,10 @@ async function boot() {
       if (firebaseStatus) firebaseStatus.textContent = cloud;
     }).catch(() => {});
   } catch (error) {
-    console.error('[WBS Quantum] Firebase bootstrap failed', error);
+    console.error('[WBS Quantum] Fatal startup error', error);
     patchState({ phase: 'signed-out', firebase: 'error', auth: 'error', error });
     showPhase('signed-out');
-    showAuthError(error.message || 'Firebase could not start.');
+    showAuthError(error.message || 'WBS Quantum could not start. Please refresh and try again.');
     showAuthLoading(false);
   }
 }

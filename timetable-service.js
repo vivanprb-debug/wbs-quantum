@@ -1,4 +1,4 @@
-import { BELL_TIMES, dayMeta, dayNumber, getWeekType, isoDate, mondayOfWeek, normaliseDate } from '../data/school-calendar.js';
+import { BELL_TIMES, dayMeta, dayNumber, getWeekType, isoDate, mondayOfWeek, normaliseDate } from './school-calendar.js';
 import { getAcademicProfile } from './academic-data.js';
 
 function cloneLesson(lesson, periodIndex) {

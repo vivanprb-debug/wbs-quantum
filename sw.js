@@ -1,4 +1,4 @@
-const CACHE = 'wbs-quantum-github-ready-v1';
+const CACHE = 'wbs-quantum-github-ready-v2';
 const APP_SHELL = [
   './','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./styles.css',
   './ai-service.js',

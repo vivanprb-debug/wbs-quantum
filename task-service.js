@@ -1,4 +1,4 @@
-import { taskRepository } from '../data/cloud-repository.js';
+import { taskRepository } from './cloud-repository.js';
 
 function cleanText(value, max = 120) { return String(value || '').trim().slice(0, max); }
 export function normaliseTask(input) {
