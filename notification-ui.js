@@ -1,5 +1,5 @@
 import { loadNotificationSnapshot, requestBrowserNotificationPermission, browserNotificationsSupported, sendBrowserNotification } from './notification-service.js';
-import { isSessionCurrent } from '../auth/session-controller.js';
+import { isSessionCurrent } from './session-controller.js';
 
 let state = { uid: null, profile: null, generation: null, items: [], loading: false, permission: 'default', lastSeen: [] };
 let timer = null;

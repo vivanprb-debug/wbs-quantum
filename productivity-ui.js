@@ -1,9 +1,9 @@
-import { loadTasks, saveTask, deleteTask } from '../tasks/task-service.js';
-import { loadExams, saveExam, deleteExam } from '../exams/exam-service.js';
-import { loadNotes, saveNote, deleteNote } from '../notes/note-service.js';
-import { syncAllUserData } from '../data/cloud-repository.js';
-import { countPending } from '../core/sync-queue.js';
-import { dataErrorMessage } from '../core/errors.js';
+import { loadTasks, saveTask, deleteTask } from './task-service.js';
+import { loadExams, saveExam, deleteExam } from './exam-service.js';
+import { loadNotes, saveNote, deleteNote } from './note-service.js';
+import { syncAllUserData } from './cloud-repository.js';
+import { countPending } from './sync-queue.js';
+import { dataErrorMessage } from './errors.js';
 
 const EMPTY = () => ({ uid:null, tasks:[], exams:[], notes:[], sessionGeneration:null, loading:false, syncState:'idle', lastError:null, filter:'all', search:'' });
 let state = EMPTY();

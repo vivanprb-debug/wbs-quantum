@@ -1,5 +1,5 @@
-import { getAuth } from '../core/firebase.js';
-import { AppError } from '../core/errors.js';
+import { getAuth } from './firebase.js';
+import { AppError } from './errors.js';
 
 function functionsClient() {
   const firebase = window.firebase;

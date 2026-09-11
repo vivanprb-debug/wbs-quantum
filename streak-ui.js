@@ -1,5 +1,5 @@
 import { ACHIEVEMENTS, claimToday, getStreak, localDateKey, subscribeLeaderboard } from './streak-service.js';
-import { listKnownProfiles } from '../profiles/profile-registry.js';
+import { listKnownProfiles } from './profile-registry.js';
 
 let state = { uid: null, profile: null, generation: null, streak: null, leaderboard: [], loading: true, claiming: false, error: null };
 let unsubscribeLeaderboard = null;

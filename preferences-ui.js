@@ -1,5 +1,5 @@
 import { DEFAULT_PREFERENCES, getPreferences, savePreferences, clearCachedPreferences } from './preferences-service.js';
-import { isSessionCurrent } from '../auth/session-controller.js';
+import { isSessionCurrent } from './session-controller.js';
 
 let state = { uid: null, profile: null, generation: null, preferences: { ...DEFAULT_PREFERENCES }, loading: true, saving: false, message: '' };
 const $ = id => document.getElementById(id);

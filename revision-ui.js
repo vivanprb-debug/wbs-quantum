@@ -1,4 +1,4 @@
-import { loadExams } from '../exams/exam-service.js';
+import { loadExams } from './exam-service.js';
 import { buildRevisionPlan, loadRevisionSessions, saveRevisionSession, deleteRevisionSession, toggleRevisionSession, localDateKey } from './revision-service.js';
 
 let uid = null;

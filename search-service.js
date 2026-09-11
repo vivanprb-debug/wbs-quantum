@@ -1,7 +1,7 @@
-import { searchTimetable } from '../timetable/timetable-service.js';
-import { loadTasks } from '../tasks/task-service.js';
-import { loadExams } from '../exams/exam-service.js';
-import { loadNotes } from '../notes/note-service.js';
+import { searchTimetable } from './timetable-service.js';
+import { loadTasks } from './task-service.js';
+import { loadExams } from './exam-service.js';
+import { loadNotes } from './note-service.js';
 
 function text(value) { return String(value ?? '').trim(); }
 function hit(type, title, subtitle, extra = {}) { return { type, title: text(title), subtitle: text(subtitle), ...extra }; }

@@ -90,3 +90,11 @@ The Settings area now supports account-scoped profile personalisation: display n
 - Expanded the service-worker app shell to include every local JavaScript module for stronger offline coverage.
 - Bumped the PWA cache/version to Module 20.
 - Added final release/integration tests.
+
+
+## GitHub-ready layout
+This release intentionally keeps the frontend flat so it is easy to upload through GitHub's web interface.
+Most frontend files are in the repository root. The only required subfolder is `functions/`, which Firebase uses for the server-side Ask AI function.
+For GitHub Pages, publish the repository root; the `functions/` folder is ignored by GitHub Pages and is deployed separately with Firebase.
+
+**Important:** `index.html` now explicitly loads `styles.css`. Do not delete it or rename it.

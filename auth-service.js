@@ -1,6 +1,6 @@
-import { getAuth } from '../core/firebase.js';
-import { APP } from '../core/config.js';
-import { AppError } from '../core/errors.js';
+import { getAuth } from './firebase.js';
+import { APP } from './config.js';
+import { AppError } from './errors.js';
 
 let unsubscribe = null;
 

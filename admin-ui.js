@@ -1,5 +1,5 @@
 import { getFeatures, getMaintenance, saveFeatures, saveMaintenance, isDeveloper, DEFAULT_FEATURES } from './admin-service.js';
-import { isSessionCurrent } from '../auth/session-controller.js';
+import { isSessionCurrent } from './session-controller.js';
 
 let state = { user: null, profile: null, generation: null, maintenance: { enabled: false, message: '' }, features: { ...DEFAULT_FEATURES }, loading: true, saving: false, message: '' };
 const $ = id => document.getElementById(id);

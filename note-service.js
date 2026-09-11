@@ -1,4 +1,4 @@
-import { noteRepository } from '../data/cloud-repository.js';
+import { noteRepository } from './cloud-repository.js';
 function cleanText(value, max) { return String(value || '').trim().slice(0, max); }
 export function normaliseNote(input) {
   const title = cleanText(input.title, 120) || 'Quick note';

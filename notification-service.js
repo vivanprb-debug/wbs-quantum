@@ -1,7 +1,7 @@
-import { loadTasks } from '../tasks/task-service.js';
-import { loadExams } from '../exams/exam-service.js';
-import { getStreak } from '../streaks/streak-service.js';
-import { getPreferences } from '../preferences/preferences-service.js';
+import { loadTasks } from './task-service.js';
+import { loadExams } from './exam-service.js';
+import { getStreak } from './streak-service.js';
+import { getPreferences } from './preferences-service.js';
 
 export function localDateKey(date = new Date()) {
   const y = date.getFullYear();

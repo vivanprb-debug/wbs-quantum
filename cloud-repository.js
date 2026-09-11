@@ -1,6 +1,6 @@
-import { getDb } from '../core/firebase.js';
-import { readJson, writeJson } from '../core/storage.js';
-import { enqueue, getPending, removePending } from '../core/sync-queue.js';
+import { getDb } from './firebase.js';
+import { readJson, writeJson } from './storage.js';
+import { enqueue, getPending, removePending } from './sync-queue.js';
 
 const COLLECTIONS = Object.freeze({ tasks: 'tasks', exams: 'exams', notes: 'notes' });
 

@@ -1,5 +1,5 @@
-import { BELL_TIMES, dayMeta, dayNumber, getWeekType, isoDate, mondayOfWeek, SCHOOL_YEAR } from '../data/school-calendar.js';
-import { getCurrentLesson, getNextLesson, getPEActivity, getScheduleForDate, getWeekSchedule, getLessonTimes, searchTimetable } from '../timetable/timetable-service.js';
+import { BELL_TIMES, dayMeta, dayNumber, getWeekType, isoDate, mondayOfWeek, SCHOOL_YEAR } from './school-calendar.js';
+import { getCurrentLesson, getNextLesson, getPEActivity, getScheduleForDate, getWeekSchedule, getLessonTimes, searchTimetable } from './timetable-service.js';
 
 let activeProfile = null;
 let selectedDate = new Date();

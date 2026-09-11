@@ -1,8 +1,8 @@
 import { askAI } from './ai-service.js';
-import { getState, subscribe } from '../core/state.js';
-import { getScheduleForDate } from '../timetable/timetable-service.js';
-import { loadTasks } from '../tasks/task-service.js';
-import { loadExams } from '../exams/exam-service.js';
+import { getState, subscribe } from './state.js';
+import { getScheduleForDate } from './timetable-service.js';
+import { loadTasks } from './task-service.js';
+import { loadExams } from './exam-service.js';
 
 let profile = null;
 let history = [];

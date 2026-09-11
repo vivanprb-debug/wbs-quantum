@@ -1,4 +1,4 @@
-import { getDb } from '../core/firebase.js';
+import { getDb } from './firebase.js';
 
 const STREAKS = 'streaks';
 const LEADERBOARD = 'leaderboard';

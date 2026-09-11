@@ -1,7 +1,7 @@
-import { getCurrentLesson, getNextLesson, getPEActivity } from '../timetable/timetable-service.js';
-import { getScheduleForDate } from '../timetable/timetable-service.js';
-import { isoDate } from '../data/school-calendar.js';
-import { loadTasks, loadExams } from '../tasks/task-service.js';
+import { getCurrentLesson, getNextLesson, getPEActivity } from './timetable-service.js';
+import { getScheduleForDate } from './timetable-service.js';
+import { isoDate } from './school-calendar.js';
+import { loadTasks, loadExams } from './task-service.js';
 
 let profile = null;
 let uid = null;

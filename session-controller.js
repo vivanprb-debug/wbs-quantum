@@ -1,6 +1,6 @@
 import { listenToAuth, signOut } from './auth-service.js';
-import { resolveProfile } from '../profiles/profile-registry.js';
-import { patchState } from '../core/state.js';
+import { resolveProfile } from './profile-registry.js';
+import { patchState } from './state.js';
 
 let unsubscribe = null;
 let generation = 0;

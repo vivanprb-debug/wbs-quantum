@@ -1,4 +1,4 @@
-import { PROFILE_REGISTRY } from '../profiles/profile-registry.js';
+import { PROFILE_REGISTRY } from './profile-registry.js';
 import { getAcademicProfile } from './academic-data.js';
 
 function validateLessons(lessons, label) {

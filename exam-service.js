@@ -1,4 +1,4 @@
-import { examRepository } from '../data/cloud-repository.js';
+import { examRepository } from './cloud-repository.js';
 function cleanText(value, max = 120) { return String(value || '').trim().slice(0, max); }
 export function normaliseExam(input) {
   const title = cleanText(input.title, 160);

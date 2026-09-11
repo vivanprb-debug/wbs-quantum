@@ -1,5 +1,5 @@
-import { getDb } from '../core/firebase.js';
-import { loadExams } from '../exams/exam-service.js';
+import { getDb } from './firebase.js';
+import { loadExams } from './exam-service.js';
 
 const COLLECTION = 'users';
 const SUBCOLLECTION = 'revisionSessions';

@@ -1,5 +1,5 @@
-import { getDb } from '../core/firebase.js';
-import { readJson, writeJson } from '../core/storage.js';
+import { getDb } from './firebase.js';
+import { readJson, writeJson } from './storage.js';
 
 const DEV_EMAIL = 'dev@wbsquantum.app';
 const DEFAULT_FEATURES = Object.freeze({

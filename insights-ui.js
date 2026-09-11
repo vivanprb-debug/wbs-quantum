@@ -1,6 +1,6 @@
-import { loadTasks } from '../tasks/task-service.js';
-import { loadExams } from '../exams/exam-service.js';
-import { loadRevisionSessions } from '../revision/revision-service.js';
+import { loadTasks } from './task-service.js';
+import { loadExams } from './exam-service.js';
+import { loadRevisionSessions } from './revision-service.js';
 import { buildTaskInsights, buildRevisionInsights, buildExamInsights, buildSubjectLoad, buildWeeklyReview } from './insights-service.js';
 
 const EMPTY = () => ({ uid:null, sessionGeneration:null, profile:null, tasks:[], exams:[], sessions:[], loading:false, error:null });

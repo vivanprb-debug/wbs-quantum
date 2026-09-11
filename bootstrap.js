@@ -1,17 +1,17 @@
-import { initializeFirebase } from '../core/firebase.js';
-import { sendPasswordReset } from '../auth/auth-service.js';
+import { initializeFirebase } from './firebase.js';
+import { sendPasswordReset } from './auth-service.js';
 import { configureSessionLifecycle } from './session-lifecycle.js';
 import { createNavigation } from './navigation.js';
-import { registerPWA, promptInstall } from '../pwa/pwa-service.js';
-import { validateAllAcademicProfiles } from '../timetable/profile-integrity.js';
-import { showAuthLoading, showAuthError, clearAuthError, setPasswordVisible, showBootStatus, showPhase } from '../ui/auth-ui.js';
-import { patchState } from '../core/state.js';
-import { authErrorMessage } from '../core/errors.js';
-import { getDb } from '../core/firebase.js';
-import { mountAI } from '../ai/ai-ui.js';
-import { getMaintenance } from '../admin/admin-service.js';
-import { setupAccessibility } from '../ui/accessibility.js';
-import { validateReleaseShell } from '../core/release-integrity.js';
+import { registerPWA, promptInstall } from './pwa-service.js';
+import { validateAllAcademicProfiles } from './profile-integrity.js';
+import { showAuthLoading, showAuthError, clearAuthError, setPasswordVisible, showBootStatus, showPhase } from './auth-ui.js';
+import { patchState } from './state.js';
+import { authErrorMessage } from './errors.js';
+import { getDb } from './firebase.js';
+import { mountAI } from './ai-ui.js';
+import { getMaintenance } from './admin-service.js';
+import { setupAccessibility } from './accessibility.js';
+import { validateReleaseShell } from './release-integrity.js';
 
 let navigation = null;
 let cloudRequestId = 0;
@@ -51,7 +51,7 @@ function wireUi() {
         window.dispatchEvent(new CustomEvent('wbs:auth-already-signed-in'));
         return;
       }
-      const { signIn } = await import('../auth/auth-service.js');
+      const { signIn } = await import('./auth-service.js');
       await signIn(document.getElementById('email').value, document.getElementById('password').value);
     } catch (error) {
       showAuthError(error.code === 'auth/timeout' ? error.message : authErrorMessage(error));
@@ -78,7 +78,7 @@ function wireUi() {
 
   document.getElementById('logout-button')?.addEventListener('click', async () => {
     try {
-      const { signOut } = await import('../auth/auth-service.js');
+      const { signOut } = await import('./auth-service.js');
       await signOut();
     } catch (error) {
       showAuthError(authErrorMessage(error));
