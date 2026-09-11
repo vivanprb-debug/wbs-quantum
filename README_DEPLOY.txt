@@ -1,28 +1,42 @@
-WBS Quantum Dashboard — 2026-2027 final bundle
+WBS Quantum Dashboard — 2026-2027 v9
 
-Included updates:
-- Freddie's exact 2026-2027 Week A / Week B timetable.
-- Freddie's exact teachers and rooms, including Science rooms S4/S9/S13.
-- Freddie's exact PE activity rotation.
-- West Bridgford weather card using the existing Open-Meteo / UK Met Office UKV setup.
-- Daily streak saved per Firebase UID.
-- Shared Streak Leaderboard for Vivan, Shriyan, Ryan and Freddie, plus any additional authenticated streak records.
-- Developer homework recipient selector for the four known student UIDs.
-- Developer maintenance mode with a Firebase appConfig/maintenance flag.
-- Updated service-worker cache version so the new build replaces the previous cached app.
+Key fixes:
+- Fionan now correctly uses the Vivan/base timetable as requested. The broken duplicate Fionan object that caused profile/greeting corruption has been removed.
+- Greeting lookup is type-safe, so a timetable object cannot accidentally appear as the student's name.
+- Maintenance mode now applies the local developer change immediately and treats Firestore permission failures as a non-blocking cloud-sync issue. Local developer access can therefore get past the maintenance screen without an "insufficient permissions" popup.
+- Cloud maintenance still needs the real developer Firebase account and deployed Firestore rules to change the maintenance state for every student.
+- Service-worker cache bumped to v9 so GitHub Pages/PWA clients refresh the new build.
 
-Firebase setup required:
-1. Deploy firestore.rules.txt in the Firebase Firestore Rules panel.
-2. The maintenance controls are available only when the signed-in Firebase account email is exactly dev@wbsquantum.app.
-3. Students can only write their own streak record. Authenticated users can read the leaderboard.
-4. The developer account is allowed to distribute homework to the selected student user documents.
-5. After replacing the hosted files, reload the PWA once so the new service worker activates.
+Premium features:
+- Focus Timer
+- Quick Note
+- Next Class
+- Streak Achievements
+- Task Pulse
+- Exam Countdown
+- Quick Study Plan
+- Timetable Search
 
-Important: the Firebase web configuration is intentionally included in the frontend because Firebase web apps require it. Do not put private server secrets in index.html.
+Accounts/profiles:
+- Vivan
+- Shriyan
+- Ryan
+- Freddie
+- Fionan
+
+Firebase setup:
+1. Deploy firestore.rules.txt in Firebase Console > Firestore Database > Rules.
+2. For cloud-wide maintenance changes, sign in with the actual Firebase developer account whose email is dev@wbsquantum.app.
+3. Students can write only their own streak record; authenticated users can read streaks.
+4. After replacing the GitHub Pages files, hard-refresh/reopen the PWA once so service worker v9 activates.
+
+Security note:
+- The local developer email unlock is only a convenience for this device. It is not a security boundary. Protected Firebase operations still depend on Firebase Authentication + Firestore Rules.
+- Never place private server/API secrets or user passwords in index.html.
 
 
-Version 5 upgrades:
-- Weather now includes a simple clothing suggestion based on feels-like temperature, rain chance, and wind.
-- Local developer-mode unlock in Settings > Developer Panel: type the configured developer email on your signed-in account. This is a front-end convenience only, not a security boundary. Firebase-protected admin actions still require the real developer Firebase account.
-- Added AI-only maintenance screen and separate app maintenance controls.
-- Added online/offline status, PWA install handling, smoother card/view animations, and reduced-motion support.
+Important v9 fixes:
+- Fionan profile timetable is isolated from other users and mapped by UID plus email fallback.
+- Profile switching resets the timetable to the base schedule before applying the signed-in profile.
+- Developer maintenance controls now support a local override so a non-admin signed-in account is not trapped by Firestore permission errors.
+- Service worker cache bumped to v9.

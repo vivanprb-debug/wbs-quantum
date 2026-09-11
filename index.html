@@ -982,8 +982,20 @@ function initFirebase() {
     if (user) {
       currentUser = user;
       document.getElementById('login-error').className = 'login-error';
-      loadMaintenanceState();
-      pullCloudData(user).then(function () { enterApp(); renderMaintenanceState(); safeRun(loadLeaderboard); safeRun(syncCurrentStreakToCloud); });
+      // Enter the app immediately after Firebase Auth succeeds. Cloud Firestore is
+      // best-effort and must never hold the login screen hostage if a read is slow,
+      // blocked, or denied by rules.
+      setLoginLoading(false);
+      enterApp();
+      safeRun(loadMaintenanceState);
+      safeRun(renderMaintenanceState);
+      pullCloudData(user).then(function () {
+        safeRun(renderHome);
+        safeRun(renderTasks);
+        safeRun(renderExams);
+      }).catch(function () {});
+      safeRun(loadLeaderboard);
+      safeRun(syncCurrentStreakToCloud);
     } else {
       currentUser = null;
       document.getElementById('app-viewport').className = 'viewport';
@@ -1006,15 +1018,33 @@ function handleLogin() {
   var email = document.getElementById('login-email').value.replace(/^\s+|\s+$/g, '');
   var pass = document.getElementById('login-password').value;
   if (!email || !pass) { showLoginError('Enter your email and password.'); return; }
+  if (!fbAuth) { showLoginError('Firebase is still loading. Please wait a moment and try again.'); return; }
   document.getElementById('login-error').className = 'login-error';
   setLoginLoading(true);
-  fbAuth.signInWithEmailAndPassword(email, pass).catch(function (err) {
+  var finished = false;
+  var timeoutId = setTimeout(function () {
+    if (finished) return;
+    finished = true;
+    setLoginLoading(false);
+    showLoginError('Sign-in is taking too long. Check your connection and Firebase Authentication, then try again.');
+  }, 12000);
+  fbAuth.signInWithEmailAndPassword(email, pass).then(function () {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timeoutId);
+    // onAuthStateChanged handles entering the app.
+    setLoginLoading(false);
+  }).catch(function (err) {
+    if (finished) return;
+    finished = true;
+    clearTimeout(timeoutId);
     setLoginLoading(false);
     var msg = 'Could not sign in.';
     if (err && err.code === 'auth/invalid-email') msg = 'That email address looks invalid.';
     else if (err && (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential')) msg = 'Wrong email or password.';
     else if (err && err.code === 'auth/user-not-found') msg = 'No account with that email yet.';
     else if (err && err.code === 'auth/network-request-failed') msg = 'No internet connection.';
+    else if (err && err.code === 'auth/too-many-requests') msg = 'Too many sign-in attempts. Wait a little and try again.';
     else if (err && err.message) msg = err.message;
     showLoginError(msg);
   });
@@ -1059,7 +1089,11 @@ function applyProfileTimetable(uid) {
 }
 
 function pullCloudData(user) {
-  return fbDb.collection('users').doc(user.uid).get().then(function (doc) {
+  if (!fbDb || !user) return Promise.resolve();
+  var read = fbDb.collection('users').doc(user.uid).get();
+  var timeout = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, 7000); });
+  return Promise.race([read, timeout]).then(function (doc) {
+    if (!doc) return; // Firestore took too long; local data remains available.
     if (doc.exists) {
       var data = doc.data();
       if (data.tasks) SafeStore.setJSON('wbs_tasks', data.tasks);
@@ -1067,7 +1101,7 @@ function pullCloudData(user) {
       if (data.chatHistory) SafeStore.setJSON('wbs_chat_history', data.chatHistory);
       if (data.apiConfig) SafeStore.setJSON('wbs_api_config', data.apiConfig);
     } else {
-      // First ever login for this account - seed the cloud doc from whatever's on this device.
+      // First login: seed the cloud in the background. Never wait for this write.
       fbDb.collection('users').doc(user.uid).set({
         tasks: SafeStore.getJSON('wbs_tasks', []),
         exams: SafeStore.getJSON('wbs_exams', []),
@@ -1076,10 +1110,9 @@ function pullCloudData(user) {
       }).catch(function () {});
     }
   }).catch(function () {
-    // Offline or blocked - just fall back to whatever's cached locally on this device.
+    // Offline or blocked - just fall back to cached local data.
   });
 }
-
 function syncToCloud() {
   if (!currentUser || !fbDb) return;
   if (syncTimer) clearTimeout(syncTimer);
