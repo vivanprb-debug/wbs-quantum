@@ -1,29 +1,48 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Students can manage only their own private data. The authenticated developer
-    // account can distribute homework to selected student documents.
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function isDeveloper() { return signedIn() && request.auth.token.email == 'dev@wbsquantum.app'; }
+
     match /users/{userId} {
-      allow read, write: if request.auth != null && (
-        request.auth.uid == userId ||
-        request.auth.token.email == 'dev@wbsquantum.app'
-      );
+      allow read, write: if isSelf(userId) || isDeveloper();
+
+      match /tasks/{taskId} {
+        allow read, create, update, delete: if isSelf(userId) || isDeveloper();
+      }
+      match /exams/{examId} {
+        allow read, create, update, delete: if isSelf(userId) || isDeveloper();
+      }
+      match /notes/{noteId} {
+        allow read, create, update, delete: if isSelf(userId) || isDeveloper();
+      }
+      match /preferences/{document} {
+        allow read, write: if isSelf(userId) || isDeveloper();
+      }
+      match /revisionSessions/{sessionId} {
+        allow read, create, update, delete: if isSelf(userId) || isDeveloper();
+      }
     }
 
-    // App-wide maintenance flag. Everyone signed in can read it; only the
-    // Firebase-authenticated developer account can change it.
     match /appConfig/maintenance {
-      allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null
-        && request.auth.token.email == 'dev@wbsquantum.app';
+      allow read: if signedIn();
+      allow create, update, delete: if isDeveloper();
     }
 
-    // Shared day-streak leaderboard. Students can update only their own score;
-    // signed-in users can read the public leaderboard.
+    match /appConfig/features {
+      allow read: if signedIn();
+      allow create, update, delete: if isDeveloper();
+    }
+
     match /streaks/{userId} {
-      allow read: if request.auth != null;
-      allow create, update, delete: if request.auth != null
-        && request.auth.uid == userId;
+      allow read: if signedIn();
+      allow create, update, delete: if isSelf(userId);
+    }
+
+    match /leaderboard/{userId} {
+      allow read: if signedIn();
+      allow create, update, delete: if isSelf(userId) || isDeveloper();
     }
   }
 }

@@ -1,0 +1,139 @@
+import { initializeFirebase } from '../core/firebase.js';
+import { sendPasswordReset } from '../auth/auth-service.js';
+import { configureSessionLifecycle } from './session-lifecycle.js';
+import { createNavigation } from './navigation.js';
+import { registerPWA, promptInstall } from '../pwa/pwa-service.js';
+import { validateAllAcademicProfiles } from '../timetable/profile-integrity.js';
+import { showAuthLoading, showAuthError, clearAuthError, setPasswordVisible, showBootStatus, showPhase } from '../ui/auth-ui.js';
+import { patchState } from '../core/state.js';
+import { authErrorMessage } from '../core/errors.js';
+import { getDb } from '../core/firebase.js';
+import { mountAI } from '../ai/ai-ui.js';
+import { getMaintenance } from '../admin/admin-service.js';
+import { setupAccessibility } from '../ui/accessibility.js';
+import { validateReleaseShell } from '../core/release-integrity.js';
+
+let navigation = null;
+let cloudRequestId = 0;
+
+function setupGlobalErrorHandling() {
+  window.addEventListener('error', event => {
+    console.error('[WBS Quantum] Unhandled runtime error', event.error || event.message);
+  });
+  window.addEventListener('unhandledrejection', event => {
+    console.error('[WBS Quantum] Unhandled promise rejection', event.reason);
+  });
+}
+
+function cloudHealthCheck(timeoutMs = 4000) {
+  const requestId = ++cloudRequestId;
+  const probe = getDb().collection('appConfig').doc('health').get()
+    .then(() => 'Connected')
+    .catch(error => error?.code === 'permission-denied' ? 'Auth connected • Firestore restricted' : 'Auth connected • Firestore unavailable');
+  const timeout = new Promise(resolve => window.setTimeout(() => resolve('Auth connected • Cloud check timed out'), timeoutMs));
+  return Promise.race([probe, timeout]).then(status => requestId === cloudRequestId ? status : 'Cloud status superseded');
+}
+
+function wireUi() {
+  setupAccessibility();
+  setupGlobalErrorHandling();
+  const loginForm = document.getElementById('login-form');
+  loginForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    clearAuthError();
+    showAuthLoading(true);
+    try {
+      // Auth service owns the sign-in lifecycle; the auth observer completes the session.
+      const auth = window.firebase?.auth;
+      if (!auth) throw new Error('Firebase Authentication is not ready yet. Please wait a moment and try again.');
+      const current = auth().currentUser;
+      if (current) {
+        window.dispatchEvent(new CustomEvent('wbs:auth-already-signed-in'));
+        return;
+      }
+      const { signIn } = await import('../auth/auth-service.js');
+      await signIn(document.getElementById('email').value, document.getElementById('password').value);
+    } catch (error) {
+      showAuthError(error.code === 'auth/timeout' ? error.message : authErrorMessage(error));
+      showAuthLoading(false);
+    }
+  });
+
+  document.getElementById('reset-button')?.addEventListener('click', async () => {
+    clearAuthError();
+    try {
+      await sendPasswordReset(document.getElementById('email').value);
+      showAuthError('Password reset email sent. Check your inbox.');
+      document.getElementById('auth-error')?.classList.remove('error');
+    } catch (error) {
+      showAuthError(error.message || authErrorMessage(error));
+    }
+  });
+
+  let visible = false;
+  document.getElementById('toggle-password')?.addEventListener('click', () => {
+    visible = !visible;
+    setPasswordVisible(visible);
+  });
+
+  document.getElementById('logout-button')?.addEventListener('click', async () => {
+    try {
+      const { signOut } = await import('../auth/auth-service.js');
+      await signOut();
+    } catch (error) {
+      showAuthError(authErrorMessage(error));
+    }
+  });
+
+  window.addEventListener('wbs:pwa-install', () => promptInstall());
+}
+
+async function boot() {
+  wireUi();
+  navigation = createNavigation({ defaultView: 'home' });
+  mountAI();
+  // Maintenance is informational for students; the developer console controls the cloud flag.
+  getMaintenance().then(({ data }) => {
+    if (data.enabled) {
+      const status = document.getElementById('firebase-status');
+      if (status) status.textContent = data.message;
+    }
+  }).catch(() => {});
+  registerPWA({ onOfflineChange: online => {
+    const status = document.getElementById('firebase-status');
+    if (status) status.textContent = online ? status.textContent.replace(/^Offline • /, '') : `Offline • ${status.textContent}`;
+  }}).catch(error => console.warn('[WBS Quantum] PWA setup failed', error));
+
+  patchState({ phase: 'booting', firebase: 'loading' });
+  showBootStatus('Loading Firebase securely…');
+
+  const release = validateReleaseShell();
+  if (!release.ok) console.error('[WBS Quantum] Release shell integrity failure', release);
+
+  const integrity = validateAllAcademicProfiles();
+  if (!integrity.ok) console.error('[WBS Quantum] Academic profile integrity failure', integrity.failures);
+
+  try {
+    await initializeFirebase();
+    patchState({ firebase: 'ready', phase: 'authenticating' });
+    showBootStatus('Firebase ready • checking account…');
+    configureSessionLifecycle({ navigationController: navigation });
+
+    // Cloud health never blocks auth or session creation.
+    cloudHealthCheck().then(cloud => {
+      patchState({ cloud });
+      const cloudStatus = document.getElementById('cloud-status');
+      const firebaseStatus = document.getElementById('firebase-status');
+      if (cloudStatus) cloudStatus.textContent = cloud;
+      if (firebaseStatus) firebaseStatus.textContent = cloud;
+    }).catch(() => {});
+  } catch (error) {
+    console.error('[WBS Quantum] Firebase bootstrap failed', error);
+    patchState({ phase: 'signed-out', firebase: 'error', auth: 'error', error });
+    showPhase('signed-out');
+    showAuthError(error.message || 'Firebase could not start.');
+    showAuthLoading(false);
+  }
+}
+
+boot();
