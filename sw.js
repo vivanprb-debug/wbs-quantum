@@ -1,51 +1,11 @@
 // WBS Quantum Service Worker
-// Safe/offline fallback version
-
-const CACHE_NAME = "wbs-quantum-v8";
-
-self.addEventListener("install", (event) => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) =>
-      Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      )
-    ).then(() => self.clients.claim())
-  );
-});
-
-self.addEventListener("fetch", (event) => {
+const CACHE_NAME = "wbs-quantum-v10";
+self.addEventListener("install", e => self.skipWaiting());
+self.addEventListener("activate", e => e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
-
-  const requestURL = new URL(event.request.url);
-  if (requestURL.origin !== self.location.origin) return;
-
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, copy);
-          });
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request))
-  );
+  const url = new URL(event.request.url);
+  if (url.origin !== self.location.origin) return;
+  event.respondWith(fetch(event.request).then(r => { if (r && r.ok) { const c=r.clone(); caches.open(CACHE_NAME).then(cache=>cache.put(event.request,c)); } return r; }).catch(()=>caches.match(event.request)));
 });
-
-self.addEventListener("notificationclick", (event) => {
-  event.notification.close();
-  event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      if (clientList.length > 0) return clientList[0].focus();
-      return self.clients.openWindow("./");
-    })
-  );
-});
+self.addEventListener("notificationclick", event => { event.notification.close(); event.waitUntil(self.clients.matchAll({type:"window",includeUncontrolled:true}).then(list => list.length ? list[0].focus() : self.clients.openWindow("./"))); });

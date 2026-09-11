@@ -222,6 +222,7 @@
   .login-loading.show { display: block; }
   #app-viewport { display: none; }
   #app-viewport.ready { display: flex; }
+.firebase-status-error{border-color:rgba(248,113,113,.35)!important;}
 </style>
 <style id="day-streak-css">.day-streak-card{margin:12px 0;padding:16px;border:1px solid rgba(255,255,255,.08);border-radius:18px;background:rgba(20,20,35,.45);backdrop-filter:blur(18px)}.day-streak-row{display:flex;align-items:center;justify-content:space-between;gap:12px}.day-streak-title{font-weight:800;font-size:15px}.day-streak-count{font-size:30px;font-weight:800}.day-streak-sub{color:#9497ad;font-size:12px;margin-top:5px}.day-streak-fire{font-size:25px}.day-streak-btn{margin-top:12px;width:100%;border:0;border-radius:12px;padding:10px 12px;font-weight:800;color:#fff;background:linear-gradient(135deg,#8b5cf6,#0ea5e9)}.day-streak-btn:disabled{opacity:.6}</style>
 <style id="maintenance-mode-css">
@@ -492,9 +493,9 @@
 </div>
 </div>
 
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script id="firebase-app-sdk" onerror="window.firebaseSdkLoadError='Firebase core failed to load';" src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script id="firebase-auth-sdk" onerror="window.firebaseSdkLoadError='Firebase Auth failed to load';" src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script id="firebase-firestore-sdk" onerror="window.firebaseFirestoreLoadError=true;" src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
 
 <script>
 /* =====================================================================
@@ -539,6 +540,8 @@ var firebaseConfig = {
   appId: "1:981877764308:web:77c9fd7cf91088e0034b41"
 };
 var fbApp = null, fbAuth = null, fbDb = null, currentUser = null, syncTimer = null;
+var firebaseInitStarted = false, firebaseInitAttempts = 0, firebaseInitTimer = null, firebaseLastError = '';
+
 
 // If you later give me a second student's timetable, drop it in here keyed by
 // their Firebase Auth UID (Firebase Console -> Authentication -> Users -> copy the UID)
@@ -974,37 +977,95 @@ function getProfileNameForUser(user) {
   return mapped && PROFILE_NAMES[mapped] ? PROFILE_NAMES[mapped] : '';
 }
 
-function initFirebase() {
-  fbApp = firebase.initializeApp(firebaseConfig);
-  fbAuth = firebase.auth();
-  fbDb = firebase.firestore();
-  fbAuth.onAuthStateChanged(function (user) {
-    if (user) {
-      currentUser = user;
-      document.getElementById('login-error').className = 'login-error';
-      // Enter the app immediately after Firebase Auth succeeds. Cloud Firestore is
-      // best-effort and must never hold the login screen hostage if a read is slow,
-      // blocked, or denied by rules.
-      setLoginLoading(false);
-      enterApp();
-      safeRun(loadMaintenanceState);
-      safeRun(renderMaintenanceState);
-      pullCloudData(user).then(function () {
-        safeRun(renderHome);
-        safeRun(renderTasks);
-        safeRun(renderExams);
-      }).catch(function () {});
-      safeRun(loadLeaderboard);
-      safeRun(syncCurrentStreakToCloud);
-    } else {
-      currentUser = null;
-      document.getElementById('app-viewport').className = 'viewport';
-      document.getElementById('login-overlay').className = 'login-overlay';
-      setLoginLoading(false);
-    }
-  });
+function setFirebaseStatus(text, isError) {
+  var el = document.getElementById('login-error');
+  if (!el) return;
+  if (text) {
+    el.innerText = text;
+    el.className = 'login-error show' + (isError ? ' firebase-status-error' : '');
+  } else {
+    el.innerText = '';
+    el.className = 'login-error';
+  }
 }
+function firebaseSdkReady() {
+  return !!(window.firebase && window.firebase.initializeApp && window.firebase.auth);
+}
+function initFirebase() {
+  if (fbAuth) return true;
+  firebaseInitAttempts++;
+  try {
+    if (!firebaseSdkReady()) {
+      firebaseLastError = 'Firebase SDK has not finished loading.';
+      if (firebaseInitAttempts >= 20) {
+        setFirebaseStatus('Firebase could not load. Refresh the page and make sure your browser allows gstatic.com.', true);
+        return false;
+      }
+      setFirebaseStatus('Loading Firebase… ' + firebaseInitAttempts + '/20', false);
+      if (firebaseInitTimer) clearTimeout(firebaseInitTimer);
+      firebaseInitTimer = setTimeout(function () { initFirebase(); }, 500);
+      return false;
+    }
 
+    if (!fbApp) {
+      try {
+        fbApp = firebase.app();
+      } catch (e) {
+        fbApp = firebase.initializeApp(firebaseConfig);
+      }
+    }
+    fbAuth = fbApp.auth();
+    // Firestore is optional for login. If its SDK is unavailable, the app still
+    // authenticates normally and uses local data until Firestore becomes available.
+    try {
+      if (firebase.firestore) fbDb = fbApp.firestore();
+    } catch (firestoreErr) {
+      fbDb = null;
+      console.warn('Firestore unavailable at boot:', firestoreErr);
+    }
+
+    firebaseInitStarted = true;
+    firebaseInitAttempts = 0;
+    firebaseLastError = '';
+    setFirebaseStatus('', false);
+
+    fbAuth.onAuthStateChanged(function (user) {
+      if (user) {
+        currentUser = user;
+        document.getElementById('login-error').className = 'login-error';
+        setLoginLoading(false);
+        enterApp();
+        safeRun(loadMaintenanceState);
+        safeRun(renderMaintenanceState);
+        pullCloudData(user).then(function () {
+          safeRun(renderHome);
+          safeRun(renderTasks);
+          safeRun(renderExams);
+        }).catch(function () {});
+        safeRun(loadLeaderboard);
+        safeRun(syncCurrentStreakToCloud);
+      } else {
+        currentUser = null;
+        document.getElementById('app-viewport').className = 'viewport';
+        document.getElementById('login-overlay').className = 'login-overlay';
+        setLoginLoading(false);
+      }
+    });
+    return true;
+  } catch (e) {
+    fbApp = fbAuth = fbDb = null;
+    firebaseLastError = e && e.message ? e.message : String(e);
+    console.error('Firebase initialization failed:', e);
+    if (firebaseInitAttempts < 20) {
+      setFirebaseStatus('Starting Firebase… ' + firebaseInitAttempts + '/20', false);
+      if (firebaseInitTimer) clearTimeout(firebaseInitTimer);
+      firebaseInitTimer = setTimeout(function () { initFirebase(); }, 750);
+    } else {
+      setFirebaseStatus('Firebase failed to start. Refresh the page and check your internet connection.', true);
+    }
+    return false;
+  }
+}
 function setLoginLoading(isLoading) {
   document.getElementById('login-loading').className = 'login-loading' + (isLoading ? ' show' : '');
 }
@@ -1018,7 +1079,9 @@ function handleLogin() {
   var email = document.getElementById('login-email').value.replace(/^\s+|\s+$/g, '');
   var pass = document.getElementById('login-password').value;
   if (!email || !pass) { showLoginError('Enter your email and password.'); return; }
-  if (!fbAuth) { showLoginError('Firebase is still loading. Please wait a moment and try again.'); return; }
+  if (!fbAuth) {
+    if (!initFirebase() || !fbAuth) { showLoginError(firebaseLastError || 'Firebase is not ready yet. Please refresh the page and try again.'); return; }
+  }
   document.getElementById('login-error').className = 'login-error';
   setLoginLoading(true);
   var finished = false;
