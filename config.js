@@ -9,7 +9,7 @@ export const FIREBASE_CONFIG = Object.freeze({
 
 export const APP = Object.freeze({
   name: "WBS Quantum",
-  version: "recode-module-20",
+  version: "recode-module-20-hotfix-1",
   firebaseSdkWaitMs: 12000,
   authWaitMs: 12000
 });

@@ -1,7 +1,8 @@
 import { getCurrentLesson, getNextLesson, getPEActivity } from './timetable-service.js';
 import { getScheduleForDate } from './timetable-service.js';
 import { isoDate } from './school-calendar.js';
-import { loadTasks, loadExams } from './task-service.js';
+import { loadTasks } from './task-service.js';
+import { loadExams } from './exam-service.js';
 
 let profile = null;
 let uid = null;

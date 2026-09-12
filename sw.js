@@ -1,4 +1,4 @@
-const CACHE = 'wbs-quantum-github-ready-v2';
+const CACHE = 'wbs-quantum-final-v3';
 const APP_SHELL = [
   './','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./styles.css',
   './ai-service.js',
@@ -56,10 +56,18 @@ self.addEventListener('message', event => { if (event.data?.type === 'SKIP_WAITI
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-  if (url.origin === location.origin) {
+  if (url.origin !== location.origin) return;
+
+  if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).then(response => {
-      if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone())).catch(() => {});
+      if (response.ok) caches.open(CACHE).then(cache => cache.put('./index.html', response.clone())).catch(() => {});
       return response;
-    }).catch(() => caches.match(event.request).then(cached => cached || new Response('Offline', { status: 503, headers: {'Content-Type':'text/plain'} }))));
+    }).catch(() => caches.match('./index.html')));
+    return;
   }
+
+  event.respondWith(fetch(event.request).then(response => {
+    if (response.ok) caches.open(CACHE).then(cache => cache.put(event.request, response.clone())).catch(() => {});
+    return response;
+  }).catch(() => caches.match(event.request).then(cached => cached || new Response('Offline', { status: 503, headers: {'Content-Type':'text/plain'} }))));
 });

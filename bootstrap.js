@@ -97,11 +97,6 @@ async function boot() {
     wireUi();
     navigation = createNavigation({ defaultView: 'home' });
     mountAI();
-    registerPWA({ onOfflineChange: online => {
-      const status = document.getElementById('firebase-status');
-      if (status) status.textContent = online ? status.textContent.replace(/^Offline • /, '') : `Offline • ${status.textContent}`;
-    }}).catch(error => console.warn('[WBS Quantum] PWA setup failed', error));
-
     const release = validateReleaseShell();
     if (!release.ok) console.error('[WBS Quantum] Release shell integrity failure', release);
 
@@ -113,6 +108,13 @@ async function boot() {
     showBootStatus('Firebase ready • checking account…');
 
     configureSessionLifecycle({ navigationController: navigation });
+
+    // Register the service worker only after the application/auth lifecycle is live.
+    // This prevents stale SW state from ever blocking the initial boot.
+    registerPWA({ onOfflineChange: online => {
+      const status = document.getElementById('firebase-status');
+      if (status) status.textContent = online ? status.textContent.replace(/^Offline • /, '') : `Offline • ${status.textContent}`;
+    }}).catch(error => console.warn('[WBS Quantum] PWA setup failed', error));
 
     // Cloud configuration is informational and never blocks authentication.
     getMaintenance().then(({ data }) => {

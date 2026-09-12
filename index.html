@@ -16,16 +16,16 @@
   <link rel="icon" href="icon-192.png">
   <link rel="apple-touch-icon" href="icon-192.png">
   <title>WBS Quantum</title>
-  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-functions-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/12.19.0/firebase-functions-compat.js"></script>
 </head>
 <body>
   <a class="skip-link" href="#app">Skip to dashboard</a>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div><div class="ambient ambient-three"></div>
   <main id="app" class="app-frame" aria-live="polite">
-    <section id="loading-view" class="glass-screen" aria-busy="true"><div class="brand-mark">Q</div><h1>WBS Quantum</h1><p id="boot-status">Starting secure sign-in…</p><div class="spinner" aria-hidden="true"></div></section>
+    <section id="loading-view" class="glass-screen" aria-busy="true"><div class="brand-mark">Q</div><h1>WBS Quantum</h1><p id="boot-status">Starting secure sign-in…</p><div class="spinner" aria-hidden="true"></div><div id="boot-diagnostic" class="message error hidden"><strong>Startup diagnostic</strong><pre data-error></pre><button type="button" class="ghost-button" onclick="location.reload()">Refresh</button></div></section>
 
     <section id="auth-view" class="glass-screen hidden">
       <div class="eyebrow">WEST BRIDGFORD SCHOOL</div>
@@ -69,6 +69,56 @@
       </nav>
     </section>
   </main>
-  <script type="module" src="bootstrap.js"></script>
+  <script>
+    // Hardened GitHub Pages bootloader. It deliberately does not depend on the service worker
+    // or the app module graph to report startup failures.
+    (function () {
+      const status = document.getElementById('boot-status');
+      const setStatus = text => { if (status) status.textContent = text; };
+      let finished = false;
+      window.__wbsBootFinished = false;
+
+      // Old service workers were able to keep stale module graphs alive between releases.
+      // Remove them once, then reload so the next navigation is genuinely fresh.
+      const freshKey = 'wbs-quantum-fresh-boot-v2';
+      if (!sessionStorage.getItem(freshKey) && 'serviceWorker' in navigator) {
+        sessionStorage.setItem(freshKey, '1');
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          if (!regs.length) return;
+          return Promise.all(regs.map(r => r.unregister()));
+        }).then(() => caches?.keys ? caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))) : null)
+          .then(() => location.reload())
+          .catch(() => start());
+      } else {
+        start();
+      }
+
+      function start() {
+        setStatus('Loading WBS Quantum…');
+        const watchdog = window.setTimeout(() => {
+          if (finished || window.__wbsBootFinished) return;
+          setStatus('Startup is taking too long. Check your connection, then refresh.');
+          const box = document.getElementById('boot-diagnostic');
+          if (box) box.classList.remove('hidden');
+        }, 10000);
+
+        import('./bootstrap.js?build=recode-final-boot-v3').then(() => {
+          finished = true;
+          window.__wbsBootFinished = true;
+          clearTimeout(watchdog);
+        }).catch(error => {
+          finished = true;
+          clearTimeout(watchdog);
+          console.error('[WBS Quantum] Bootstrap module failed to load', error);
+          setStatus('Startup error: ' + (error?.message || 'The app could not load.'));
+          const box = document.getElementById('boot-diagnostic');
+          if (box) {
+            box.classList.remove('hidden');
+            box.querySelector('[data-error]')?.replaceChildren(document.createTextNode(error?.stack || error?.message || String(error)));
+          }
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
